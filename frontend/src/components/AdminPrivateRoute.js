@@ -1,10 +1,17 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
-const AdminPrivateRoute = () => {
+// 1. Terima 'children' sebagai properti
+const AdminPrivateRoute = ({ children }) => { 
     const token = localStorage.getItem('adminToken');
-    // Di aplikasi nyata, Anda harus memverifikasi token ini ke backend
-    return token ? <Outlet /> : <Navigate to="/admin/login" />;
+
+    // Jika tidak ada token, alihkan ke halaman login
+    if (!token) {
+        return <Navigate to="/admin/login" replace />;
+    }
+
+    // 2. Jika ada token, tampilkan "anak"-nya (yaitu komponen AdminLayout)
+    return children; 
 };
 
 export default AdminPrivateRoute;

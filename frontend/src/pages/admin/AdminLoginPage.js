@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Coffee, Lock, Mail, AlertCircle } from 'lucide-react';
 
 const AdminLoginPage = () => {
@@ -8,6 +9,7 @@ const AdminLoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [logoError, setLogoError] = useState(false);
+    const navigate = useNavigate();
 
     // Konfigurasi logo - File di folder public
     const LOGO_CONFIG = {
@@ -30,13 +32,16 @@ const AdminLoginPage = () => {
                 body: JSON.stringify({ email, password }),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Login berhasil:', data);
-                alert('Login berhasil! (Demo mode)');
-            } else {
-                throw new Error('Login gagal');
-            }
+           if (response.ok) {
+            const data = await response.json();
+            console.log('Login berhasil:', data);
+
+            // 1. Simpan token ke localStorage agar status login tidak hilang
+            localStorage.setItem('adminToken', data.token);
+
+            // 2. Arahkan pengguna ke halaman dashboard admin
+            navigate('/admin/dashboard'); 
+}
         } catch (err) {
             setError('Email atau password salah!');
             console.error(err);
@@ -366,7 +371,6 @@ const AdminLoginPage = () => {
                         <p>© 2024 Coffenary. All rights reserved.</p>
                     </div>
                 </div>
-
             </div>
         </div>
     );

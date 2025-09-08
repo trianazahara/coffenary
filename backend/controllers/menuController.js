@@ -1,63 +1,94 @@
-const pool = require('../config/db');
+const Menu = require('../models/menuModel');
+
+
+// Untuk pelanggan (hanya menu yang tersedia)
+const getAllMenu = async (req, res) => {
+    try {
+        // Gunakan Menu.findAll dari model
+        const menuItems = await Menu.findAll();
+        res.json(menuItems);
+    } catch (error) {
+        console.error("Error saat mengambil menu:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+};
+
+// Khusus Admin: Mendapatkan semua menu (termasuk yang tidak tersedia)
+const getAllMenuForAdmin = async (req, res) => {
+    try {
+        // Gunakan Menu.findAllForAdmin dari model
+        const menuItems = await Menu.findAllForAdmin();
+        res.json(menuItems);
+    } catch (error) {
+        console.error("Error saat mengambil menu admin:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+};
 
 // Admin: Membuat menu baru
-exports.createMenu = async (req, res) => {
-    // Data teks ada di req.body
-    const { nama_menu, deskripsi_menu, kategori, harga, is_available, stok } = req.body;
-    // Path gambar yang sudah disimpan ada di req.file
-    const gambar = req.file ? req.file.path : null;
-
+const createMenu = async (req, res) => {
     try {
-        const [result] = await pool.query(
-            'INSERT INTO menu (nama_menu, deskripsi_menu, kategori, harga, gambar, is_available, stok) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [nama_menu, deskripsi_menu, kategori, harga, gambar, is_available, stok || null]
-        );
-        res.status(201).json({ message: 'Menu berhasil ditambahkan', id: result.insertId });
+        const menuData = {
+            ...req.body,
+            gambar: req.file ? req.file.path.replace(/\\/g, "/") : null // Mengganti backslash menjadi forward slash untuk kompatibilitas
+        };
+        
+        // Gunakan Menu.create untuk membuat data baru
+        const newMenu = await Menu.create(menuData);
+        res.status(201).json({ message: 'Menu berhasil ditambahkan', data: newMenu });
     } catch (error) {
-        res.status(500).json({ message: 'Error server', error: error.message });
+        console.error("Error saat membuat menu:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
 
-exports.updateMenu = async (req, res) => {
-    const { id } = req.params;
-    const { nama_menu, deskripsi_menu, kategori, harga, is_available, stok } = req.body;
-    const gambar = req.file ? req.file.path : req.body.gambar; // Jika tidak ada file baru, gunakan path lama
-
+// Admin: Mengupdate menu
+const updateMenu = async (req, res) => {
     try {
-        await pool.query(
-            'UPDATE menu SET nama_menu = ?, deskripsi_menu = ?, kategori = ?, harga = ?, gambar = ?, is_available = ?, stok = ? WHERE id_menu = ?',
-            [nama_menu, deskripsi_menu, kategori, harga, gambar, is_available, stok || null, id]
-        );
+        const { id } = req.params;
+        const menuData = { ...req.body };
+
+        if (req.file) {
+            menuData.gambar = req.file.path.replace(/\\/g, "/");
+        }
+        
+        // Gunakan Menu.update untuk memperbarui data
+        const result = await Menu.update(id, menuData);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Menu tidak ditemukan' });
+        }
         res.json({ message: 'Menu berhasil diperbarui' });
     } catch (error) {
-        res.status(500).json({ message: 'Error server', error: error.message });
+        console.error("Error saat mengupdate menu:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
-
-// Pelanggan & Admin: Melihat semua menu
-exports.getAllMenu = async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM menu WHERE is_available = TRUE');
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ message: 'Error server', error: error.message });
-    }
-};
-
-
 
 // Admin: Menghapus menu
-exports.deleteMenu = async (req, res) => {
-    const { id } = req.params;
+const deleteMenu = async (req, res) => {
     try {
-        const [result] = await pool.query('DELETE FROM menu WHERE id_menu = ?', [id]);
+        const { id } = req.params;
+        
+        // Gunakan Menu.delete untuk menghapus data
+        const result = await Menu.delete(id);
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Menu tidak ditemukan' });
         }
         res.json({ message: 'Menu berhasil dihapus' });
     } catch (error) {
-        res.status(500).json({ message: 'Error server', error: error.message });
+        console.error("Error saat menghapus menu:", error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
 
-// ... tambahkan fungsi updateMenu dan deleteMenu untuk admin ...
+
+// --- Ekspor semua fungsi ---
+module.exports = {
+    getAllMenu,
+    getAllMenuForAdmin,
+    createMenu,
+    updateMenu,
+    deleteMenu
+};

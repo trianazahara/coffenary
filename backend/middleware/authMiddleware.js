@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-exports.protect = (req, res, next) => {
+const protect = (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = decoded; // Menambahkan info user (id, role) ke request
+            req.user = decoded; // Menambahkan { id, peran } ke request
             next();
         } catch (error) {
             res.status(401).json({ message: 'Tidak terotentikasi, token gagal' });
@@ -17,10 +17,11 @@ exports.protect = (req, res, next) => {
     }
 };
 
-exports.isAdmin = (req, res, next) => {
-    if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin')) {
-        next();
-    } else {
-        res.status(403).json({ message: 'Akses ditolak, bukan admin' });
+const checkRole = (roles) => (req, res, next) => {
+    if (!roles.includes(req.user.peran)) {
+        return res.status(403).json({ message: 'Akses ditolak: Anda tidak memiliki peran yang sesuai' });
     }
+    next();
 };
+
+module.exports = { protect, checkRole };

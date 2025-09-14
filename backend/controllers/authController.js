@@ -1,98 +1,46 @@
-// backend/controllers/authController.js
-const Pelanggan = require('../models/pelangganModel');
-const Admin = require('../models/adminModel');
+const Pengguna = require('../models/penggunaModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-
-const registerPelanggan = async (req, res) => {
-    const { username, password, nama, email, no_telp } = req.body;
-    try {
-        const existingUser = await Pelanggan.findByEmail(email);
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email sudah terdaftar.' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        const customerData = {
-            username,
-            password: hashedPassword,
-            nama,
-            email,
-            no_telp
-        };
-
-        const newUser = await Pelanggan.create(customerData);
-
-        res.status(201).json({ message: 'Registrasi berhasil!', userId: newUser.id });
-    } catch (error) {
-        console.error("Error saat registrasi:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
-    }
-};
-
-const loginPelanggan = async (req, res) => {
+const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await Pelanggan.findByEmail(email);
-        
-        if (!user) {
+        const pengguna = await Pengguna.findByEmail(email);
+        if (!pengguna) {
             return res.status(401).json({ message: 'Email atau password salah' });
         }
-
-        const isMatch = await bcrypt.compare(password, user.password);
+        
+        const isMatch = await bcrypt.compare(password, pengguna.kata_sandi_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Email atau password salah' });
         }
 
         const token = jwt.sign(
-            { id: user.id_pelanggan, role: 'pelanggan' },
-            process.env.JWT_SECRET,
-            { expiresIn: '1d' }
-        );
-
-        const { password: _, ...userWithoutPassword } = user;
-        res.json({ token, user: userWithoutPassword });
-        
-    } catch (error) {
-        console.error("Error saat login pelanggan:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
-    }
-};
-
-const loginAdmin = async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const admin = await Admin.findByEmail(email);
-
-        if (!admin) {
-            return res.status(401).json({ message: 'Email atau password salah' });
-        }
-        
-        const isMatch = await bcrypt.compare(password, admin.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Email atau password salah' });
-        }
-
-        const token = jwt.sign(
-            { id: admin.id_admin, role: admin.role },
+            { id: pengguna.id_pengguna, peran: pengguna.peran },
             process.env.JWT_SECRET,
             { expiresIn: '8h' }
         );
-
-        const { password: _, ...adminWithoutPassword } = admin;
-        res.json({ token, admin: adminWithoutPassword });
-
+        
+        const { kata_sandi_hash: _, ...dataPengguna } = pengguna;
+        res.json({ token, pengguna: dataPengguna });
     } catch (error) {
-        console.error("Error saat login admin:", error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
-// --- Ekspor semua fungsi dalam satu objek ---
-module.exports = {
-    registerPelanggan,
-    loginPelanggan,
-    loginAdmin
+const register = async (req, res) => {
+    const { username, email, password, nama_lengkap, telepon } = req.body;
+    try {
+        const existingUser = await Pengguna.findByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email sudah terdaftar.' });
+        }
+        const kata_sandi_hash = await bcrypt.hash(password, 10);
+        const newUser = await Pengguna.create({ username, email, kata_sandi_hash, nama_lengkap, telepon, peran: 'pelanggan' });
+        res.status(201).json({ message: 'Registrasi berhasil!', userId: newUser.id });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
 };
+
+module.exports = { login, register };

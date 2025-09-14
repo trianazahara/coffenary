@@ -1,27 +1,17 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from '../../pages/admin/Sidebar';
+import Sidebar from './Sidebar';
 
 const AdminLayout = () => {
-    const layoutStyle = {
-        display: 'flex',
-        minHeight: '100vh',
-        backgroundColor: '#f8fafc' // Warna latar belakang area konten
-    };
-
-    const contentStyle = {
-        flexGrow: 1, // Mengambil sisa ruang yang tersedia
-        padding: '2rem',
-        overflowY: 'auto' // Agar bisa di-scroll jika konten panjang
+    const styles = {
+        layout: { display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' },
+        mainContent: { flexGrow: 1, padding: '2rem', overflowY: 'auto' }
     };
 
     return (
-        <div style={layoutStyle}>
+        <div style={styles.layout}>
             <Sidebar />
-            <main style={contentStyle}>
-                {/* Outlet akan merender komponen anak sesuai dengan route yang aktif.
-                  Contoh: Jika URL /admin/dashboard, maka komponen AdminDashboard akan dirender di sini.
-                */}
+            <main style={styles.mainContent}>
                 <Outlet />
             </main>
         </div>

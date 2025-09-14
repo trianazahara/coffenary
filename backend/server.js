@@ -1,22 +1,32 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const path = require('path');
 
+// Impor Routes
 const authRoutes = require('./routes/authRoutes');
+const cabangRoutes = require('./routes/cabangRoutes');
 const menuRoutes = require('./routes/menuRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-// const orderRoutes = require('./routes/orderRoutes'); // Nanti dibuat
+const pesananRoutes = require('./routes/pesananRoutes');
+const penggunaRoutes = require('./routes/penggunaRoutes')
 
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Untuk parsing body JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Middleware untuk menyajikan file statis (gambar yang di-upload)
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+
+// Gunakan Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/cabang', cabangRoutes);
 app.use('/api/menu', menuRoutes);
-app.use('/api/orders', orderRoutes);
+app.use('/api/pesanan', pesananRoutes);
+app.use('/api/pengguna', penggunaRoutes);
 
 
 const PORT = process.env.PORT || 5000;

@@ -2,48 +2,42 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // Import Pages
-import HomePage from './pages/HomePage';
-import MenuPage from './pages/MenuPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-
-// Import Admin Components
+// import HomePage from './pages/HomePage'; (dan halaman pelanggan lainnya)
 import AdminPrivateRoute from './components/AdminPrivateRoute';
-import AdminLayout from './components/admin/AdminLayout'; // Pastikan file ini ada
 import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminLayout from './components/admin/AdminLayout';
+import PilihCabangPage from './pages/admin/PilihCabangPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMenu from './pages/admin/AdminMenu';
-import AdminPemesanan from './pages/admin/AdminPemesanan';
+import AdminPemesanan from './pages/admin/AdminPemesanan';import AdminPengguna from './pages/admin/AdminPengguna'; 
+import AdminLog from './pages/admin/AdminLog'; 
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Rute Publik & Pelanggan */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/menu" element={<MenuPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* Halaman Login Admin (Publik) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
 
-        {/* ==================================================================== */}
-        {/* INI ADALAH STRUKTUR YANG BENAR UNTUK MEMUNCULKAN SIDEBAR */}
-        {/* ==================================================================== */}
-        <Route
-          path="/admin"
-          element={
-            <AdminPrivateRoute>
-              <AdminLayout />
-            </AdminPrivateRoute>
-          }
-        >
-          {/* Rute di bawah ini akan dirender di dalam <Outlet/> pada AdminLayout */}
+        {/* Halaman Pilih Cabang (Dilindungi) */}
+        <Route path="/pilih-cabang" element={<AdminPrivateRoute><PilihCabangPage /></AdminPrivateRoute>} />
+
+        {/* Halaman Utama Admin dengan Layout (Dilindungi) */}
+        <Route path="/admin" element={<AdminPrivateRoute><AdminLayout /></AdminPrivateRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="pemesanan" element={<AdminPemesanan />} />
         </Route>
 
+        <Route path="/admin" element={<AdminPrivateRoute><AdminLayout /></AdminPrivateRoute>}>
+          {/* ... rute dashboard, menu, pemesanan ... */}
+          <Route path="pengguna" element={<AdminPengguna />} /> {/* <-- Tambahkan ini */}
+          <Route path="log" element={<AdminLog />} />       {/* <-- Tambahkan ini */}
+        </Route>
+
+        {/* Tambahkan rute untuk pelanggan di sini */}
+        {/* <Route path="/" element={<HomePage />} /> */}
       </Routes>
     </Router>
   );

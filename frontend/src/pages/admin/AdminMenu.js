@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
-// --- STYLING OBJECTS ---
 const styles = {
     header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' },
     title: { fontSize: '2.25rem', fontWeight: 'bold', color: '#111827' },
@@ -12,33 +12,33 @@ const styles = {
     td: { padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#374151' },
     actionButton: { background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' },
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-    modalContent: { backgroundColor: 'white', padding: '2rem', borderRadius: '0.5rem', width: '500px', maxHeight: '90vh', overflowY: 'auto'},
+    modalContent: { backgroundColor: 'white', padding: '2rem', borderRadius: '0.5rem', width: '500px', maxHeight: '90vh', overflowY: 'auto' },
     input: { width: '100%', boxSizing: 'border-box', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', marginTop: '0.5rem' },
     formGroup: { marginBottom: '1rem' },
     modalActions: { display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' },
     saveButton: { backgroundColor: '#10b981', color: 'white' },
-    cancelButton: { backgroundColor: '#e5e7eb', color: '#374151' }
-    
+    cancelButton: { backgroundColor: '#e5e7eb', color: '#374151' },
+    td: { padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#374151', verticalAlign: 'middle' }, // Pastikan ada verticalAlign
+    imagePreview: { 
+        width: '60px',
+        height: '60px',
+        objectFit: 'cover',
+        borderRadius: '0.5rem'
+    }
 };
 
 const AdminMenu = () => {
     const [menuItems, setMenuItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
-    const [selectedFile, setSelectedFile] = useState(null); 
+    const [selectedFile, setSelectedFile] = useState(null);
     const [error, setError] = useState('');
-
-
-    const API_URL = 'http://localhost:5000/api/menu';
-
-    useEffect(() => {
-        fetchMenuItems();
-    }, []);
+    const { selectedBranch, token } = useContext(AuthContext);
 
     const fetchMenuItems = async () => {
+        if (!selectedBranch) return;
         try {
-            const response = await axios.get(API_URL);
-            // Ambil semua data dari backend
+            const response = await axios.get(`http://localhost:5000/api/menu/${selectedBranch.id_cabang}`);
             setMenuItems(response.data);
         } catch (err) {
             setError('Gagal mengambil data menu.');
@@ -46,8 +46,16 @@ const AdminMenu = () => {
         }
     };
 
-    const getToken = () => localStorage.getItem('adminToken');
+    useEffect(() => {
+        if (selectedBranch) {
+            fetchMenuItems();
+        }
+    }, [selectedBranch]);
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+    
     const handleOpenModal = (item = null) => {
         setCurrentItem(item);
         setIsModalOpen(true);
@@ -56,58 +64,49 @@ const AdminMenu = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setCurrentItem(null);
+        setSelectedFile(null);
     };
     
-    const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
-    };
-
     const handleSave = async (e) => {
         e.preventDefault();
-        const token = getToken();
-        if (!token) return alert('Silakan login ulang.');
+        if (!selectedBranch || !token) return alert('Silakan pilih cabang atau login ulang.');
 
-        // Gunakan FormData untuk mengirim file dan data teks
         const formData = new FormData();
         formData.append('nama_menu', e.target.nama_menu.value);
         formData.append('deskripsi_menu', e.target.deskripsi_menu.value);
         formData.append('kategori', e.target.kategori.value);
         formData.append('harga', e.target.harga.value);
-        formData.append('is_available', e.target.is_available.value);
+        formData.append('is_tersedia', e.target.is_tersedia.value);
         formData.append('stok', e.target.stok.value || null);
         
         if (selectedFile) {
             formData.append('gambar', selectedFile);
         } else if (currentItem) {
-            formData.append('gambar', currentItem.gambar); // Kirim path lama jika tidak ada file baru
+            formData.append('gambar', currentItem.gambar);
         }
 
         try {
-            // Saat mengirim FormData, browser akan otomatis mengatur header
             const config = { headers: { Authorization: `Bearer ${token}` } };
-
             if (currentItem) {
-                await axios.put(`${API_URL}/${currentItem.id_menu}`, formData, config);
+                await axios.put(`http://localhost:5000/api/menu/${selectedBranch.id_cabang}/${currentItem.id_menu}`, formData, config);
             } else {
-                await axios.post(API_URL, formData, config);
+                await axios.post(`http://localhost:5000/api/menu/${selectedBranch.id_cabang}`, formData, config);
             }
             fetchMenuItems();
             handleCloseModal();
-            setSelectedFile(null); // Reset file state
         } catch (err) {
             alert('Gagal menyimpan data!');
             console.error(err);
         }
     };
     
-    const handleDelete = async (id) => {
-        const token = getToken();
-        if (!token) return alert('Silakan login ulang.');
+    const handleDelete = async (id_menu) => {
+        if (!selectedBranch || !token) return alert('Silakan pilih cabang atau login ulang.');
         
         if (window.confirm('Apakah Anda yakin ingin menghapus menu ini?')) {
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                await axios.delete(`${API_URL}/${id}`, config);
+                await axios.delete(`http://localhost:5000/api/menu/${selectedBranch.id_cabang}/${id_menu}`, config);
                 fetchMenuItems();
             } catch (err) {
                 alert('Gagal menghapus data!');
@@ -116,52 +115,62 @@ const AdminMenu = () => {
         }
     };
 
-    return (
-        <div>
-            <div style={styles.header}>
-                <h1 style={styles.title}>Manajemen Menu</h1>
-                <button onClick={() => handleOpenModal()} style={styles.addButton}>
-                    <Plus size={20} style={{ marginRight: '0.5rem' }} />
-                    Tambah Menu
-                </button>
-            </div>
+     return (
+    <div>
+        <div style={styles.header}>
+            <h1 style={styles.title}>Manajemen Menu</h1>
+            <button onClick={() => handleOpenModal()} style={styles.addButton}>
+                <Plus size={20} style={{ marginRight: '0.5rem' }} />
+                Tambah Menu
+            </button>
+        </div>
 
-            <table style={styles.table}>
-                <thead>
-                    <tr>
-                        <th style={styles.th}>Nama Menu</th>
-                        <th style={styles.th}>Kategori</th>
-                        <th style={styles.th}>Harga</th>
-                        {/* */}
-                        <th style={styles.th}>Stok</th>
-                        <th style={styles.th}>Ketersediaan</th>
-                        <th style={styles.th}>Aksi</th>
+        <table style={styles.table}>
+            <thead>
+                <tr>
+                    <th style={styles.th}>Gambar</th>
+                    <th style={styles.th}>Nama Menu</th>
+                    <th style={styles.th}>Kategori</th>
+                    <th style={styles.th}>Harga</th>
+                    <th style={styles.th}>Stok</th>
+                    <th style={styles.th}>Ketersediaan</th>
+                    <th style={styles.th}>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {menuItems.map(item => (
+                    <tr key={item.id_menu}>
+                        {/* INI BAGIAN PENTINGNYA */}
+                        <td style={styles.td}>
+                            {item.gambar ? (
+                                <img 
+                                    src={`http://localhost:5000/${item.gambar.replace(/\\/g, '/')}`} 
+                                    alt={item.nama_menu}
+                                    style={styles.imagePreview}
+                                />
+                            ) : (
+                                <div style={{width: '60px', height: '60px', backgroundColor: '#f3f4f6', borderRadius: '0.5rem'}}></div>
+                            )}
+                        </td>
+                        <td style={styles.td}>{item.nama_menu}</td>
+                        <td style={styles.td}>{item.kategori}</td>
+                        <td style={styles.td}>Rp {parseFloat(item.harga).toLocaleString('id-ID')}</td>
+                        <td style={styles.td}>{item.stok ?? 'Tidak dilacak'}</td>
+                        <td style={styles.td}>{item.is_tersedia ? 'Tersedia' : 'Habis'}</td>
+                        <td style={styles.td}>
+                            <button onClick={() => handleOpenModal(item)} style={{...styles.actionButton, color: '#3b82f6'}}><Edit size={20} /></button>
+                            <button onClick={() => handleDelete(item.id_menu)} style={{...styles.actionButton, color: '#ef4444'}}><Trash2 size={20} /></button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    {menuItems.map(item => (
-                        <tr key={item.id_menu}>
-                            <td style={styles.td}>{item.nama_menu}</td>
-                            <td style={styles.td}>{item.kategori}</td>
-                            <td style={styles.td}>Rp {parseFloat(item.harga).toLocaleString('id-ID')}</td>
-                             {/* */}
-                            <td style={styles.td}>{item.stok ?? 'Tidak dilacak'}</td>
-                            <td style={styles.td}>{item.is_available ? 'Tersedia' : 'Habis'}</td>
-                            <td style={styles.td}>
-                                <button onClick={() => handleOpenModal(item)} style={{...styles.actionButton, color: '#3b82f6'}}><Edit size={20} /></button>
-                                <button onClick={() => handleDelete(item.id_menu)} style={{...styles.actionButton, color: '#ef4444'}}><Trash2 size={20} /></button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                ))}
+            </tbody>
+        </table>
 
             {isModalOpen && (
                 <div style={styles.modalOverlay}>
                     <div style={styles.modalContent}>
                         <h2>{currentItem ? 'Edit Menu' : 'Tambah Menu Baru'}</h2>
                         <form onSubmit={handleSave}>
-                            {/* */}
                             <div style={styles.formGroup}>
                                 <label>Nama Menu</label>
                                 <input name="nama_menu" type="text" defaultValue={currentItem?.nama_menu} style={styles.input} required />
@@ -185,12 +194,11 @@ const AdminMenu = () => {
                             </div>
                              <div style={styles.formGroup}>
                                 <label>Gambar (PNG/JPG)</label>
-                                {/* UBAH INPUT INI MENJADI TYPE "file" */}
                                 <input name="gambar" type="file" onChange={handleFileChange} accept="image/png, image/jpeg" style={styles.input} />
                             </div>
                             <div style={styles.formGroup}>
                                 <label>Ketersediaan</label>
-                                <select name="is_available" defaultValue={currentItem ? (currentItem.is_available ? 1 : 0) : 1} style={styles.input} required>
+                                <select name="is_tersedia" defaultValue={currentItem ? (currentItem.is_tersedia ? 1 : 0) : 1} style={styles.input} required>
                                     <option value="1">Tersedia</option>
                                     <option value="0">Habis</option>
                                 </select>

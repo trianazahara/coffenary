@@ -1,0 +1,52 @@
+[
+  {
+    "id": 10,
+    "aktivitas": "Menambahkan menu 'cabe' di cabang 1",
+    "waktu": "21 September 2025 pukul 22.50"
+  },
+  {
+    "id": 9,
+    "aktivitas": "Menghapus menu ID 8 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 8,
+    "aktivitas": "Menghapus menu ID 7 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 7,
+    "aktivitas": "Mengupdate menu ID 9 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 6,
+    "aktivitas": "Menghapus menu ID 10 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 5,
+    "aktivitas": "Menghapus menu ID 11 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 4,
+    "aktivitas": "Menghapus menu ID 5 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 3,
+    "aktivitas": "Menghapus menu ID 3 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 2,
+    "aktivitas": "Menghapus menu ID 2 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  },
+  {
+    "id": 1,
+    "aktivitas": "Menghapus menu ID 1 di cabang 1",
+    "waktu": "21 September 2025 pukul 22.48"
+  }
+]

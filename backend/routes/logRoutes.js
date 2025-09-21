@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const LogModel = require("../models/logModel");
 
-// Ambil semua log
+// GET semua log
 router.get("/", (req, res) => {
   try {
     const logs = LogModel.getLogs();

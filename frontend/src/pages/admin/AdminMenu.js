@@ -9,7 +9,7 @@ const styles = {
     addButton: { backgroundColor: '#10b981', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' },
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', borderRadius: '0.5rem', overflow: 'hidden' },
     th: { padding: '1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb', color: '#4b5563', textTransform: 'uppercase', fontSize: '0.75rem' },
-    td: { padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#374151' },
+    td: { padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#374151', verticalAlign: 'middle' },
     actionButton: { background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' },
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
     modalContent: { backgroundColor: 'white', padding: '2rem', borderRadius: '0.5rem', width: '500px', maxHeight: '90vh', overflowY: 'auto' },
@@ -18,18 +18,16 @@ const styles = {
     modalActions: { display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' },
     saveButton: { backgroundColor: '#10b981', color: 'white' },
     cancelButton: { backgroundColor: '#e5e7eb', color: '#374151' },
-    td: { padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#374151', verticalAlign: 'middle' }, // Pastikan ada verticalAlign
-    imagePreview: { 
-        width: '60px',
-        height: '60px',
-        objectFit: 'cover',
-        borderRadius: '0.5rem'
-    }
+    dangerButton: { backgroundColor: '#ef4444', color: 'white' },
+    imagePreview: { width: '60px', height: '60px', objectFit: 'cover', borderRadius: '0.5rem' }
 };
 
 const AdminMenu = () => {
     const [menuItems, setMenuItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // ✅ modal delete
+    const [deleteTarget, setDeleteTarget] = useState(null); // ✅ target menu yang mau dihapus
     const [currentItem, setCurrentItem] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
     const [error, setError] = useState('');
@@ -94,78 +92,86 @@ const AdminMenu = () => {
             }
             fetchMenuItems();
             handleCloseModal();
+            setIsSuccessModalOpen(true);
+            setTimeout(() => setIsSuccessModalOpen(false), 3000);
         } catch (err) {
             alert('Gagal menyimpan data!');
             console.error(err);
         }
     };
     
-    const handleDelete = async (id_menu) => {
-        if (!selectedBranch || !token) return alert('Silakan pilih cabang atau login ulang.');
-        
-        if (window.confirm('Apakah Anda yakin ingin menghapus menu ini?')) {
-            try {
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                await axios.delete(`http://localhost:5000/api/menu/${selectedBranch.id_cabang}/${id_menu}`, config);
-                fetchMenuItems();
-            } catch (err) {
-                alert('Gagal menghapus data!');
-                console.error(err);
-            }
+    const confirmDelete = (item) => {
+        setDeleteTarget(item);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDelete = async () => {
+        if (!selectedBranch || !token || !deleteTarget) return;
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            await axios.delete(`http://localhost:5000/api/menu/${selectedBranch.id_cabang}/${deleteTarget.id_menu}`, config);
+            fetchMenuItems();
+            setIsDeleteModalOpen(false);
+            setDeleteTarget(null);
+        } catch (err) {
+            alert('Gagal menghapus data!');
+            console.error(err);
         }
     };
 
-     return (
-    <div>
-        <div style={styles.header}>
-            <h1 style={styles.title}>Manajemen Menu</h1>
-            <button onClick={() => handleOpenModal()} style={styles.addButton}>
-                <Plus size={20} style={{ marginRight: '0.5rem' }} />
-                Tambah Menu
-            </button>
-        </div>
+    return (
+        <div>
+            {/* HEADER */}
+            <div style={styles.header}>
+                <h1 style={styles.title}>Manajemen Menu</h1>
+                <button onClick={() => handleOpenModal()} style={styles.addButton}>
+                    <Plus size={20} style={{ marginRight: '0.5rem' }} />
+                    Tambah Menu
+                </button>
+            </div>
 
-        <table style={styles.table}>
-            <thead>
-                <tr>
-                    <th style={styles.th}>Gambar</th>
-                    <th style={styles.th}>Nama Menu</th>
-                    <th style={styles.th}>Kategori</th>
-                    <th style={styles.th}>Harga</th>
-                    <th style={styles.th}>Stok</th>
-                    <th style={styles.th}>Ketersediaan</th>
-                    <th style={styles.th}>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {menuItems.map(item => (
-                    <tr key={item.id_menu}>
-                        {/* INI BAGIAN PENTINGNYA */}
-                        <td style={styles.td}>
-                            {item.gambar ? (
-                                <img 
-                                    src={`http://localhost:5000/${item.gambar.replace(/\\/g, '/')}`} 
-                                    alt={item.nama_menu}
-                                    style={styles.imagePreview}
-                                />
-                            ) : (
-                                <div style={{width: '60px', height: '60px', backgroundColor: '#f3f4f6', borderRadius: '0.5rem'}}></div>
-                            )}
-                        </td>
-                        <td style={styles.td}>{item.nama_menu}</td>
-                        <td style={styles.td}>{item.kategori}</td>
-                        <td style={styles.td}>Rp {parseFloat(item.harga).toLocaleString('id-ID')}</td>
-                        <td style={styles.td}>{item.stok ?? 'Tidak dilacak'}</td>
-                        <td style={styles.td}>{item.is_tersedia ? 'Tersedia' : 'Habis'}</td>
-                        <td style={styles.td}>
-                            <button onClick={() => handleOpenModal(item)} style={{...styles.actionButton, color: '#3b82f6'}}><Edit size={20} /></button>
-                            <button onClick={() => handleDelete(item.id_menu)} style={{...styles.actionButton, color: '#ef4444'}}><Trash2 size={20} /></button>
-                        </td>
+            {/* TABLE */}
+            <table style={styles.table}>
+                <thead>
+                    <tr>
+                        <th style={styles.th}>Gambar</th>
+                        <th style={styles.th}>Nama Menu</th>
+                        <th style={styles.th}>Kategori</th>
+                        <th style={styles.th}>Harga</th>
+                        <th style={styles.th}>Stok</th>
+                        <th style={styles.th}>Ketersediaan</th>
+                        <th style={styles.th}>Aksi</th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {menuItems.map(item => (
+                        <tr key={item.id_menu}>
+                            <td style={styles.td}>
+                                {item.gambar ? (
+                                    <img 
+                                        src={`http://localhost:5000/${item.gambar.replace(/\\/g, '/')}`} 
+                                        alt={item.nama_menu}
+                                        style={styles.imagePreview}
+                                    />
+                                ) : (
+                                    <div style={{width: '60px', height: '60px', backgroundColor: '#f3f4f6', borderRadius: '0.5rem'}}></div>
+                                )}
+                            </td>
+                            <td style={styles.td}>{item.nama_menu}</td>
+                            <td style={styles.td}>{item.kategori}</td>
+                            <td style={styles.td}>Rp {parseFloat(item.harga).toLocaleString('id-ID')}</td>
+                            <td style={styles.td}>{item.stok ?? 'Tidak dilacak'}</td>
+                            <td style={styles.td}>{item.is_tersedia ? 'Tersedia' : 'Habis'}</td>
+                            <td style={styles.td}>
+                                <button onClick={() => handleOpenModal(item)} style={{...styles.actionButton, color: '#3b82f6'}}><Edit size={20} /></button>
+                                <button onClick={() => confirmDelete(item)} style={{...styles.actionButton, color: '#ef4444'}}><Trash2 size={20} /></button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
 
+            {/* MODAL FORM TAMBAH/EDIT */}
             {isModalOpen && (
                 <div style={styles.modalOverlay}>
                     <div style={styles.modalContent}>
@@ -212,6 +218,48 @@ const AdminMenu = () => {
                                 <button type="submit" style={{...styles.addButton, ...styles.saveButton}}>Simpan</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL SUKSES */}
+            {isSuccessModalOpen && (
+                <div style={styles.modalOverlay}>
+                    <div style={{...styles.modalContent, textAlign: 'center'}}>
+                        <h2 style={{ color: '#10b981', fontSize: '1.5rem', marginBottom: '1rem' }}>Sukses!</h2>
+                        <p>Menu berhasil disimpan 🎉</p>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                            <button 
+                                onClick={() => setIsSuccessModalOpen(false)} 
+                                style={{...styles.addButton, ...styles.saveButton}}
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL KONFIRMASI DELETE */}
+            {isDeleteModalOpen && (
+                <div style={styles.modalOverlay}>
+                    <div style={{...styles.modalContent, textAlign: 'center'}}>
+                        <h2 style={{ color: '#ef4444', fontSize: '1.5rem', marginBottom: '1rem' }}>Hapus Menu?</h2>
+                        <p>Apakah Anda yakin ingin menghapus <b>{deleteTarget?.nama_menu}</b>?</p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button 
+                                onClick={() => setIsDeleteModalOpen(false)} 
+                                style={{...styles.addButton, ...styles.cancelButton}}
+                            >
+                                Tidak
+                            </button>
+                            <button 
+                                onClick={handleDelete} 
+                                style={{...styles.addButton, ...styles.dangerButton}}
+                            >
+                                Ya, Hapus
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

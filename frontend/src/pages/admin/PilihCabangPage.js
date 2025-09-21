@@ -32,7 +32,16 @@ const PilihCabangPage = () => {
 
   const handleSelectBranch = (branch) => {
     selectBranch(branch);
-    navigate("/admin/dashboard");
+
+    if (user?.peran === "admin") {
+      navigate("/admin/dashboard");
+    } else if (user?.peran === "staff") {
+      navigate("/staff/dashboard");
+    } else if (user?.peran === "pelanggan") {
+      navigate("/pelanggan/dashboard");
+    } else {
+      navigate("/"); // fallback kalau role tidak dikenal
+    }
   };
 
   return (

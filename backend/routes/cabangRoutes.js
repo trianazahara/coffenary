@@ -3,6 +3,6 @@ const { getAllCabang } = require('../controllers/cabangController');
 const { protect, checkRole } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-router.get('/', protect, checkRole(['admin', 'staff']), getAllCabang);
+router.get('/', protect, checkRole(['admin', 'staff', 'pelanggan']), getAllCabang);
 
 module.exports = router;

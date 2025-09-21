@@ -9,7 +9,7 @@ const createHash = async () => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     console.log('Password Anda:', password);
     console.log('Hash Bcrypt:', hashedPassword);
-  } catch (error) {
+  } catch (error) {                 
     console.error('Error saat membuat hash:', error);
   }
 };

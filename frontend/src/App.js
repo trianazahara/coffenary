@@ -9,8 +9,10 @@ import AdminLayout from './components/admin/AdminLayout';
 import PilihCabangPage from './pages/admin/PilihCabangPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMenu from './pages/admin/AdminMenu';
-import AdminPemesanan from './pages/admin/AdminPemesanan';import AdminPengguna from './pages/admin/AdminPengguna'; 
+import AdminPemesanan from './pages/admin/AdminPemesanan';
+import AdminPengguna from './pages/admin/AdminPengguna'; 
 import AdminLog from './pages/admin/AdminLog'; 
+import AdminLogAktivitas from "./pages/admin/AdminLogAktivitas";
 
 function App() {
   return (
@@ -28,12 +30,9 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="pemesanan" element={<AdminPemesanan />} />
-        </Route>
-
-        <Route path="/admin" element={<AdminPrivateRoute><AdminLayout /></AdminPrivateRoute>}>
-          {/* ... rute dashboard, menu, pemesanan ... */}
-          <Route path="pengguna" element={<AdminPengguna />} /> {/* <-- Tambahkan ini */}
-          <Route path="log" element={<AdminLog />} />       {/* <-- Tambahkan ini */}
+          <Route path="pengguna" element={<AdminPengguna />} /> 
+          <Route path="log" element={<AdminLog />} />       
+          <Route path="log-aktivitas" element={<AdminLogAktivitas />} /> {/* ✅ Tambahan */}
         </Route>
 
         {/* Tambahkan rute untuk pelanggan di sini */}

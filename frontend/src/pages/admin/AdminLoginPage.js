@@ -5,8 +5,8 @@ import { AuthContext } from '../../context/AuthContext';
 import { Coffee, Mail, Lock } from 'lucide-react';
 
 // --- NEW STYLING ---
-const styles = {
-  container: {
+const styles = {            
+  container: {         
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

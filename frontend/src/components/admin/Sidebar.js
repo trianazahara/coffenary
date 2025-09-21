@@ -106,10 +106,11 @@ const Sidebar = () => {
                             <Users size={20} style={{ marginRight: '0.75rem' }} />
                             Pengguna
                         </NavLink>
-                        <NavLink to="/admin/log" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
-                            <History size={20} style={{ marginRight: '0.75rem' }} />
-                            Log Aktivitas
-                        </NavLink>
+                       <NavLink to="/admin/log-aktivitas" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
+    <History size={20} style={{ marginRight: '0.75rem' }} />
+    Log Aktivitas
+</NavLink>
+
                     </>
                 )}
             </nav>

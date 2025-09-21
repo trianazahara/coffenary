@@ -51,4 +51,29 @@ const deleteMenu = async (req, res) => {
     }
 };
 
-module.exports = { getAllMenuByCabang, createMenu, updateMenu, deleteMenu };
+const getMenuByCabang = async (req, res) => {
+  try {
+    const { id_cabang } = req.params;
+    const [rows] = await db.query(
+      "SELECT * FROM menu WHERE id_cabang = ? AND is_tersedia = 1",
+      [id_cabang]
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Gagal mengambil menu", error });
+  }
+};
+
+const getMenuById = async (req, res) => {
+  try {
+    const { id_menu } = req.params;
+    const [rows] = await pool.query('SELECT * FROM menu WHERE id_menu = ?', [id_menu]);
+    if (!rows[0]) return res.status(404).json({ message: 'Menu tidak ditemukan' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil data menu' });
+  }
+};
+
+module.exports = { getAllMenuByCabang, createMenu, updateMenu, deleteMenu, getMenuByCabang, getMenuById };

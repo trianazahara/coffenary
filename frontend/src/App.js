@@ -13,6 +13,16 @@ import AdminPemesanan from './pages/admin/AdminPemesanan';
 import AdminPengguna from './pages/admin/AdminPengguna'; 
 import AdminLog from './pages/admin/AdminLog'; 
 import AdminLogAktivitas from "./pages/admin/AdminLogAktivitas";
+import UserLoginPage from './pages/UserLoginPage';
+import DashboardPelanggan from "./pages/pelanggan/DashboardPelanggan";
+import MenuListPage from "./pages/pelanggan/MenuListPage";
+import CartPage from "./pages/pelanggan/CartPage";
+import InvoicePage from "./pages/pelanggan/InvoicePage";
+import PaymentPage from "./pages/pelanggan/PaymentPage";
+import TableSelectionPage from "./pages/pelanggan/TableSelectionPage";
+import ReceiptPage from "./pages/pelanggan/ReceiptPage";
+import ProfilePage from "./pages/pelanggan/ProfilePage";
+import OrderHistoryPage from "./pages/pelanggan/OrderHistoryPage";
 
 function App() {
   return (
@@ -20,6 +30,7 @@ function App() {
       <Routes>
         {/* Halaman Login Admin (Publik) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/" element={<UserLoginPage />} />
 
         {/* Halaman Pilih Cabang (Dilindungi) */}
         <Route path="/pilih-cabang" element={<AdminPrivateRoute><PilihCabangPage /></AdminPrivateRoute>} />
@@ -36,6 +47,18 @@ function App() {
         </Route>
 
         {/* Tambahkan rute untuk pelanggan di sini */}
+        <Route path="/pelanggan/dashboard" element={<DashboardPelanggan />} />
+        <Route path="/pelanggan/menu" element={<MenuListPage />} />
+        <Route path="/pelanggan/cart" element={<CartPage />} />
+        <Route path="/pelanggan/invoices" element={<InvoicePage />} />
+        <Route path="/pelanggan/payment" element={<PaymentPage />} />
+        <Route path="/pelanggan/table" element={<TableSelectionPage />} />
+        <Route path="/pelanggan/receipt" element={<ReceiptPage />} />
+        <Route path="/pelanggan/profile" element={<ProfilePage />} />
+        <Route path="/pelanggan/history" element={<OrderHistoryPage />} />
+
+
+
         {/* <Route path="/" element={<HomePage />} /> */}
       </Routes>
     </Router>

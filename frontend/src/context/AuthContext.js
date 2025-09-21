@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setSelectedBranch(null);
         // Lakukan redirect penuh untuk membersihkan state
-        window.location.href = '/admin/login';
+        window.location.href = '/';
     };
 
     const selectBranch = (branchData) => {

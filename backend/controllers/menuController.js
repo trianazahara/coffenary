@@ -1,4 +1,5 @@
 const Menu = require('../models/menuModel');
+const pool = require('../config/db'); // Import pool untuk raw queries
 
 const getAllMenuByCabang = async (req, res) => {
     try {
@@ -6,6 +7,21 @@ const getAllMenuByCabang = async (req, res) => {
         const menuItems = await Menu.findAllByCabang(id_cabang);
         res.json(menuItems);
     } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+const getFeaturedMenu = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT * FROM menu 
+            WHERE is_tersedia = 1 
+            ORDER BY id_menu DESC 
+            LIMIT 6
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching featured menu:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -76,4 +92,4 @@ const getMenuById = async (req, res) => {
   }
 };
 
-module.exports = { getAllMenuByCabang, createMenu, updateMenu, deleteMenu, getMenuByCabang, getMenuById };
+module.exports = { getAllMenuByCabang, getFeaturedMenu, createMenu, updateMenu, deleteMenu, getMenuByCabang, getMenuById };

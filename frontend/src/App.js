@@ -13,6 +13,9 @@ import AdminPemesanan from './pages/admin/AdminPemesanan';
 import AdminPengguna from './pages/admin/AdminPengguna'; 
 import AdminLog from './pages/admin/AdminLog'; 
 import AdminLogAktivitas from "./pages/admin/AdminLogAktivitas";
+import EditProfilePage from "./pages/admin/EditProfilePage";
+
+
 
 function App() {
   return (
@@ -34,12 +37,13 @@ function App() {
           <Route path="log" element={<AdminLog />} />       
           <Route path="log-aktivitas" element={<AdminLogAktivitas />} /> {/* ✅ Tambahan */}
         </Route>
+        <Route path="/edit-profile" element={<EditProfilePage />} />
+        </Routes>
+        </Router>
 
-        {/* Tambahkan rute untuk pelanggan di sini */}
-        {/* <Route path="/" element={<HomePage />} /> */}
-      </Routes>
-    </Router>
+
   );
 }
+
 
 export default App;

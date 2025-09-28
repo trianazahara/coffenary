@@ -5,3 +5,6 @@ exports.getAllLogs = (req, res) => {
   const data = LogModel.getLogs();
   res.json(data);
 };
+
+
+

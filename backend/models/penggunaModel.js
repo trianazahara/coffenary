@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 
+
 class Pengguna {
     static async create(data) {
         const { username, email, kata_sandi_hash, nama_lengkap, telepon, peran } = data;
@@ -62,6 +63,9 @@ static async findAll(filter = {}) {
     return result;
 }
 }
+
+
+
 
 
 module.exports = Pengguna;

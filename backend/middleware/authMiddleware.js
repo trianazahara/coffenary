@@ -2,18 +2,27 @@ const jwt = require('jsonwebtoken');
 
 const protect = (req, res, next) => {
     let token;
+
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = decoded; // Menambahkan { id, peran } ke request
-            next();
+
+            // Sekarang decoded bawa { id, peran, nama_lengkap }
+            req.user = {
+                id: decoded.id,
+                peran: decoded.peran,
+                nama_lengkap: decoded.nama_lengkap || "Pengguna"
+            };
+
+            return next();
         } catch (error) {
-            res.status(401).json({ message: 'Tidak terotentikasi, token gagal' });
+            return res.status(401).json({ message: 'Tidak terotentikasi, token gagal' });
         }
     }
+
     if (!token) {
-        res.status(401).json({ message: 'Tidak terotentikasi, tidak ada token' });
+        return res.status(401).json({ message: 'Tidak terotentikasi, tidak ada token' });
     }
 };
 
@@ -24,4 +33,10 @@ const checkRole = (roles) => (req, res, next) => {
     next();
 };
 
-module.exports = { protect, checkRole };
+// 🔥 Tambahan helper biar gampang ambil info user di controller
+const getUserInfo = (req) => {
+    if (!req.user) return { id: null, peran: null, nama_lengkap: "Tidak dikenal" };
+    return req.user;
+};
+
+module.exports = { protect, checkRole, getUserInfo };

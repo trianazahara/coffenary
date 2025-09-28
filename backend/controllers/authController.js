@@ -15,8 +15,13 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Email atau password salah' });
         }
 
+        // ✅ Tambahin nama_lengkap ke payload
         const token = jwt.sign(
-            { id: pengguna.id_pengguna, peran: pengguna.peran },
+            { 
+                id: pengguna.id_pengguna, 
+                peran: pengguna.peran, 
+                nama_lengkap: pengguna.nama_lengkap 
+            },
             process.env.JWT_SECRET,
             { expiresIn: '8h' }
         );
@@ -28,6 +33,7 @@ const login = async (req, res) => {
     }
 };
 
+
 const register = async (req, res) => {
     const { username, email, password, nama_lengkap, telepon } = req.body;
     try {
@@ -35,9 +41,23 @@ const register = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: 'Email sudah terdaftar.' });
         }
+
         const kata_sandi_hash = await bcrypt.hash(password, 10);
-        const newUser = await Pengguna.create({ username, email, kata_sandi_hash, nama_lengkap, telepon, peran: 'pelanggan' });
-        res.status(201).json({ message: 'Registrasi berhasil!', userId: newUser.id });
+
+        // default peran pelanggan (tidak diubah)
+        const newUser = await Pengguna.create({ 
+            username, 
+            email, 
+            kata_sandi_hash, 
+            nama_lengkap, 
+            telepon, 
+            peran: 'pelanggan' 
+        });
+
+        res.status(201).json({ 
+            message: 'Registrasi berhasil!', 
+            userId: newUser.id 
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

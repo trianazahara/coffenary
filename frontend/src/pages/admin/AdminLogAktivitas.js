@@ -7,7 +7,11 @@ const AdminLogAktivitas = () => {
   useEffect(() => {
     fetch("http://localhost:5000/api/logs")
       .then((res) => res.json())
-      .then((data) => setLogs(data))
+      .then((data) => {
+        // ✅ urutkan log dari lama ke baru (supaya yang baru muncul di bawah)
+        const sortedLogs = [...data].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+        setLogs(sortedLogs);
+      })
       .catch((err) => console.error("Error fetch logs:", err));
   }, []);
 
@@ -34,7 +38,7 @@ const AdminLogAktivitas = () => {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead style={{ backgroundColor: "#f0fdf4" }}>
             <tr>
-              <th style={thStyle}>No</th>
+              <th style={thStyle}>Nomor</th>
               <th style={thStyle}>Aktivitas</th>
               <th style={thStyle}>Admin</th>
               <th style={thStyle}>Waktu</th>
@@ -42,13 +46,14 @@ const AdminLogAktivitas = () => {
           </thead>
           <tbody>
             {logs.map((log, index) => (
-              <tr
-                key={log.id}
-                style={{
-                  backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9fafb",
-                }}
-              >
-                <td style={tdStyle}>{log.id}</td>
+            <tr
+  key={`${log.id}-${index}`}
+  style={{
+    backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9fafb",
+  }}
+>
+                {/* ✅ nomor urut dari 1 meskipun log.id acak */}
+                <td style={tdStyle}>{index + 1}</td>
                 <td style={tdStyle}>{log.aktivitas}</td>
                 <td style={tdStyle}>{log.admin}</td>
                 <td style={tdStyle}>{log.waktu}</td>

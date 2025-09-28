@@ -52,7 +52,7 @@ module.exports = {
       const newLog = {
         id: logs.length + 1,
         aktivitas,
-        admin,
+        admin: admin && admin.trim() !== "" ? admin : "Admin Tidak Dikenal", // 🔥 Tambahan
         waktu: new Date().toLocaleString("id-ID", {
           day: "numeric",
           month: "long",

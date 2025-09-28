@@ -13,18 +13,52 @@ const styles = {
     td: { padding: '1rem', borderBottom: '1px solid #e5e7eb', color: '#374151', verticalAlign: 'middle' },
     statusBadge: { padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '500', display: 'inline-block' },
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-    modalContent: { backgroundColor: 'white', padding: '2rem', borderRadius: '0.75rem', width: '90%', maxWidth: '500px', position: 'relative' },
+    modalContent: { backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.75rem', width: '85%', maxWidth: '420px', position: 'relative', marginTop: '3rem' },
     closeButton: { position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' },
     formGroup: { marginBottom: '1rem' },
     input: { width: '100%', boxSizing: 'border-box', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', marginTop: '0.5rem' },
     modalActions: { display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' },
 };
 
+// ✅ Komponen Modal Notifikasi
+const NotificationModal = ({ message, type, onClose }) => {
+    return (
+        <div style={styles.modalOverlay}>
+            <div style={{ ...styles.modalContent, textAlign: 'center' }}>
+                <button onClick={onClose} style={styles.closeButton}>
+                    <X size={24} color="#6b7280" />
+                </button>
+                <h2 style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                    color: type === 'success' ? '#10b981' : '#ef4444',
+                    marginBottom: '1rem'
+                }}>
+                    {type === 'success' ? 'Berhasil!' : 'Gagal!'}
+                </h2>
+                <p style={{ color: '#374151' }}>{message}</p>
+                
+                {/* ✅ Tombol OK ditengah */}
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                    <button
+                        onClick={onClose}
+                        style={{ ...styles.addButton, backgroundColor: type === 'success' ? '#10b981' : '#ef4444' }}
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const AdminPengguna = () => {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
+    const [notif, setNotif] = useState({ open: false, message: '', type: '' }); // ✅ State untuk notif
     const { token } = useContext(AuthContext);
 
     const fetchUsers = async () => {
@@ -66,10 +100,7 @@ const AdminPengguna = () => {
             is_aktif: e.target.is_aktif ? e.target.is_aktif.value : (currentUser ? currentUser.is_aktif : 1),
         };
         
-        // Ambil password dari form
         const password = e.target.password ? e.target.password.value : null;
-
-        // Hanya tambahkan password ke data jika diisi
         if (password && password.trim() !== '') {
             formData.password = password;
         }
@@ -77,19 +108,17 @@ const AdminPengguna = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
             if (currentUser) {
-                // Mode Edit: Kirim request PUT
                 await axios.put(`http://localhost:5000/api/pengguna/${currentUser.id_pengguna}`, formData, config);
-                alert('Data pengguna berhasil diperbarui!');
+                setNotif({ open: true, message: 'Data pengguna berhasil diperbarui!', type: 'success' });
             } else {
-                // Mode Tambah: Kirim request POST
                 await axios.post('http://localhost:5000/api/pengguna', formData, config);
-                alert('Pengguna baru berhasil ditambahkan!');
+                setNotif({ open: true, message: 'Pengguna baru berhasil ditambahkan!', type: 'success' });
             }
             handleCloseModal();
-            fetchUsers(); // Refresh data
+            fetchUsers();
         } catch (error) {
             console.error("Gagal menyimpan data pengguna:", error);
-            alert(error.response?.data?.message || 'Gagal menyimpan data.');
+            setNotif({ open: true, message: error.response?.data?.message || 'Gagal menyimpan data.', type: 'error' });
         }
     };
 
@@ -104,7 +133,8 @@ const AdminPengguna = () => {
                     Tambah Staff
                 </button>
             </div>
-            
+
+            {/* Tabel Pengguna */}
             <div style={styles.tableContainer}>
                 <table style={styles.table}>
                     <thead>
@@ -142,6 +172,7 @@ const AdminPengguna = () => {
                 </table>
             </div>
 
+            {/* Modal Tambah/Edit */}
             {isModalOpen && (
                 <div style={styles.modalOverlay}>
                     <div style={styles.modalContent}>
@@ -150,28 +181,18 @@ const AdminPengguna = () => {
                             {currentUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}
                         </h2>
                         <form onSubmit={handleSave}>
-                            {/* ... (Input Nama, Email tidak berubah) ... */}
-                             <div style={styles.formGroup}>
+                            <div style={styles.formGroup}>
                                 <label>Nama Lengkap</label>
                                 <input name="nama_lengkap" type="text" defaultValue={currentUser?.nama_lengkap} style={styles.input} required />
                             </div>
-                             <div style={styles.formGroup}>
+                            <div style={styles.formGroup}>
                                 <label>Email</label>
                                 <input name="email" type="email" defaultValue={currentUser?.email} style={styles.input} required />
                             </div>
-
-                            {/* --- PERUBAHAN DI SINI --- */}
                             <div style={styles.formGroup}>
                                 <label>{currentUser ? 'Password Baru (kosongkan jika tidak diubah)' : 'Password Sementara'}</label>
-                                <input 
-                                    name="password" 
-                                    type="password" 
-                                    style={styles.input} 
-                                    required={!currentUser} // Wajib diisi hanya saat menambah user baru
-                                />
+                                <input name="password" type="password" style={styles.input} required={!currentUser} />
                             </div>
-                            
-                            {/* ... (Input Telepon, Peran, dan Status tidak berubah) ... */}
                             <div style={styles.formGroup}>
                                 <label>Telepon</label>
                                 <input name="telepon" type="text" defaultValue={currentUser?.telepon} style={styles.input} />
@@ -200,7 +221,17 @@ const AdminPengguna = () => {
                     </div>
                 </div>
             )}
+
+            {/* ✅ Modal Notifikasi */}
+            {notif.open && (
+                <NotificationModal 
+                    message={notif.message} 
+                    type={notif.type} 
+                    onClose={() => setNotif({ ...notif, open: false })} 
+                />
+            )}
         </div>
     );
-};  
+};
+
 export default AdminPengguna;

@@ -97,3 +97,22 @@
 .loading {
   color: #718096;
 }
+
+/* Tambahkan di file CSS global */
+.sidebar {
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.group:hover .group-hover\:bg-green-500 {
+  transition: all 0.3s ease;
+}
+
+/* Smooth scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 10px;
+}

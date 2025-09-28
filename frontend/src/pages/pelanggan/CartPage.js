@@ -2,8 +2,10 @@
 import React, { useContext } from "react";
 import { CartContext } from "../../context/CartContext";
 import { Plus, Minus, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CartPage = () => {
+  const navigate = useNavigate();
   const {
     cartItems,
     updateQty,
@@ -139,7 +141,7 @@ const CartPage = () => {
             cursor: "pointer",
             fontWeight: "bold",
           }}
-          onClick={() => alert("Lanjut ke pembayaran 🚀")}
+          onClick={() => navigate("/checkout")}
         >
           Lanjut ke Pembayaran
         </button>

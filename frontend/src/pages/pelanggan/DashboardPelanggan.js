@@ -513,7 +513,7 @@ const DashboardPelanggan = () => {
           )}
         </section>
 
-        Promo Section
+        {/* Promo Section
         <section style={styles.promoSection}>
           <div style={styles.promoDecoration}>
             <Gift />
@@ -537,7 +537,7 @@ const DashboardPelanggan = () => {
               Klaim Sekarang
             </button>
           </div>
-        </section>
+        </section> */}
       </main>
     </div>
   );

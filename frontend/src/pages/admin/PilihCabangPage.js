@@ -36,7 +36,7 @@ const PilihCabangPage = () => {
     if (user?.peran === "admin") {
       navigate("/admin/dashboard");
     } else if (user?.peran === "staff") {
-      navigate("/staff/dashboard");
+      navigate("/admin/dashboard");
     } else if (user?.peran === "pelanggan") {
       navigate("/pelanggan/dashboard");
     } else {

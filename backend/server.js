@@ -10,6 +10,12 @@ const menuRoutes = require('./routes/menuRoutes');
 const pesananRoutes = require('./routes/pesananRoutes');
 const penggunaRoutes = require('./routes/penggunaRoutes');
 const logRoutes = require("./routes/logRoutes");
+const checkoutRoutes = require('./routes/checkoutRoutes');
+const tempatDudukRoutes = require('./routes/tempatDudukRoutes');
+const pembayaranRoutes = require('./routes/pembayaranRoutes');
+
+
+
 
 const app = express();
 
@@ -29,6 +35,9 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/pesanan', pesananRoutes);
 app.use('/api/pengguna', penggunaRoutes);
 app.use('/api/logs', logRoutes); 
+app.use('/api/checkout', checkoutRoutes);
+app.use('/api/tempat-duduk', tempatDudukRoutes);
+app.use('/api/pembayaran', pembayaranRoutes);
 
 
 const PORT = process.env.PORT || 5000;

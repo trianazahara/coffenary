@@ -23,6 +23,8 @@ import TableSelectionPage from "./pages/pelanggan/TableSelectionPage";
 import ReceiptPage from "./pages/pelanggan/ReceiptPage";
 import ProfilePage from "./pages/pelanggan/ProfilePage";
 import OrderHistoryPage from "./pages/pelanggan/OrderHistoryPage";
+import CheckoutPage from "./pages/pelanggan/CheckoutPage";
+
 
 function App() {
   return (
@@ -56,6 +58,10 @@ function App() {
         <Route path="/pelanggan/receipt" element={<ReceiptPage />} />
         <Route path="/pelanggan/profile" element={<ProfilePage />} />
         <Route path="/pelanggan/history" element={<OrderHistoryPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/pelanggan/payment/:id_pesanan" element={<PaymentPage />} />
+
 
 
 

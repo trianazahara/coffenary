@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAllMenuByCabang, createMenu, updateMenu, deleteMenu, getMenuByCabang, getMenuById } = require('../controllers/menuController');
+const { getAllMenuByCabang, createMenu, updateMenu, deleteMenu, getMenuByCabang, getMenuById, getFeaturedMenu } = require('../controllers/menuController');
 const { protect, checkRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const router = express.Router();

@@ -4,19 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 import Header from '../../components/pelanggan/Header';
+import { CartContext } from '../../context/CartContext';  
+
 import { 
   Search, 
   Filter, 
   Plus, 
   Minus,
   ShoppingCart,
-  Star,
   Coffee,
   UtensilsCrossed,
   Cookie,
   IceCream,
-  X,
-  Check
+  X
 } from 'lucide-react';
 
 const styles = {
@@ -328,8 +328,10 @@ if (!document.querySelector('#menu-styles')) {
 const MenuListPage = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  
-  // State management
+
+  // ⬇️ ambil dari CartContext
+  const { cartItems, addToCart, updateQty } = useContext(CartContext);
+
   const [menuItems, setMenuItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -338,10 +340,8 @@ const MenuListPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('semua');
   const [searchFocus, setSearchFocus] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
-  const [cart, setCart] = useState({});
   const [cartHover, setCartHover] = useState(false);
 
-  // Categories dengan icons
   const categories = [
     { id: 'semua', label: 'Semua', icon: <Filter size={16} /> },
     { id: 'minuman', label: 'Minuman', icon: <Coffee size={16} /> },
@@ -361,23 +361,24 @@ const MenuListPage = () => {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-   
-      const selectedCabang = user?.id_cabang || localStorage.getItem('selectedCabang') || 1;
-    
-      const response = await axios.get(`/api/menu/${selectedCabang}`);
-    
-      const transformedMenu = response.data.map(item => ({
+      const stored = JSON.parse(localStorage.getItem('selectedBranch') || 'null');
+      const idCabang = stored?.id_cabang || user?.id_cabang || 1;
+
+      // pastikan proxy atau baseURL sudah benar
+      const res = await axios.get(`/api/menu/${idCabang}`);
+
+      const transformedMenu = res.data.map(item => ({
         id: item.id_menu,
         name: item.nama_menu,
         description: item.deskripsi_menu,
-        price: item.harga,
+        price: Number(item.harga) || 0,           // ⬅️ pastikan number (hindari NaN)
         category: item.kategori,
         image: item.gambar,
         available: item.is_tersedia === 1
       }));
       setMenuItems(transformedMenu);
-    } catch (error) {
-      console.error('Error fetching menu:', error);
+    } catch (err) {
+      console.error('Error fetching menu:', err);
       setError('Gagal memuat menu');
     } finally {
       setLoading(false);
@@ -386,57 +387,42 @@ const MenuListPage = () => {
 
   const filterItems = () => {
     let filtered = menuItems;
-
-    // Filter by category
     if (selectedCategory !== 'semua') {
       filtered = filtered.filter(item => item.category === selectedCategory);
     }
-
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+        (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.description || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     setFilteredItems(filtered);
   };
 
-  const updateQuantity = (itemId, change) => {
-    setCart(prev => {
-      const currentQty = prev[itemId] || 0;
-      const newQty = Math.max(0, currentQty + change);
-      
-      if (newQty === 0) {
-        const { [itemId]: removed, ...rest } = prev;
-        return rest;
-      }
-      
-      return { ...prev, [itemId]: newQty };
-    });
-  };
-
-  const getTotalCartItems = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(price);
-  };
+  // helper: ubah item UI -> format legacy yang dipakai CartContext
+  const toLegacyCartItem = (it) => ({
+    id_menu: it.id,
+    nama_menu: it.name,
+    deskripsi_menu: it.description,
+    kategori: it.category,
+    gambar: it.image,
+    harga: Number(it.price) || 0, // ⬅️ pastikan numeric
+  });
 
   const getCategoryIcon = (category) => {
     const categoryData = categories.find(cat => cat.id === category);
     return categoryData ? categoryData.icon : <UtensilsCrossed size={16} />;
   };
 
+  const getTotalCartItems = () =>
+    cartItems.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+      .format(Number(price) || 0);
+
   const handleCartClick = () => {
-    // Simpan cart data ke context atau localStorage sebelum navigate
-    localStorage.setItem('cartData', JSON.stringify(cart));
+    // CartContext sudah menyimpan ke localStorage di dalamnya, jadi langsung navigate
     navigate('/pelanggan/cart');
   };
 
@@ -470,7 +456,7 @@ const MenuListPage = () => {
   return (
     <div style={styles.container}>
       <Header />
-      
+
       <main style={styles.main} className="main-padding">
         {/* Header */}
         <div style={styles.header}>
@@ -529,111 +515,96 @@ const MenuListPage = () => {
           <div style={styles.emptyState}>
             <Coffee size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
             <p>Tidak ada menu yang ditemukan</p>
-            <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-              Coba ubah filter atau kata kunci pencarian
-            </p>
           </div>
         ) : (
           <div style={styles.menuGrid} className="menu-grid">
-            {filteredItems.map((item, index) => (
-              <div
-                key={item.id}
-                style={{
-                  ...styles.menuCard,
-                  ...(hoveredCard === index ? styles.menuCardHover : {}),
-                  ...((!item.available) ? { opacity: 0.7 } : {})
-                }}
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {/* Image */}
-                <div style={styles.menuImage}>
-                  {item.image ? (
-                    <img 
-                      src={`http://localhost:5000/${item.image}`} 
-                      alt={item.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div style={{ 
-                    display: item.image ? 'none' : 'flex', 
-                    width: '100%', 
-                    height: '100%', 
-                    alignItems: 'center', 
-                    justifyContent: 'center' 
-                  }}>
-                    {getCategoryIcon(item.category)}
-                  </div>
-                  
-                  {/* Availability Badge */}
-                  <div style={{
-                    ...styles.availabilityBadge,
-                    ...(item.available ? styles.availableBadge : styles.unavailableBadge)
-                  }}>
-                    {item.available ? 'Tersedia' : 'Habis'}
-                  </div>
-                </div>
+            {filteredItems.map((item, index) => {
+              // cari qty yang sudah ada di CartContext
+              const inCart = cartItems.find(ci => ci.id_menu === item.id);
+              const qty = inCart?.qty || 0;
 
-                {/* Content */}
-                <div style={styles.menuContent}>
-                  <div style={styles.menuHeader}>
-                    <h3 style={styles.menuTitle}>{item.name}</h3>
-                    <span style={styles.menuPrice}>{formatPrice(item.price)}</span>
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    ...styles.menuCard,
+                    ...(hoveredCard === index ? styles.menuCardHover : {}),
+                    ...((!item.available) ? { opacity: 0.7 } : {})
+                  }}
+                  onMouseEnter={() => setHoveredCard(index)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  {/* Image */}
+                  <div style={styles.menuImage}>
+                    {item.image ? (
+                      <img
+                        src={`http://localhost:5000/${item.image}`}
+                        alt={item.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : getCategoryIcon(item.category)}
+                    <div style={{
+                      ...styles.availabilityBadge,
+                      ...(item.available ? styles.availableBadge : styles.unavailableBadge)
+                    }}>
+                      {item.available ? 'Tersedia' : 'Habis'}
+                    </div>
                   </div>
-                  
-                  <p style={styles.menuDescription}>{item.description}</p>
-                  
-                  <div style={styles.menuFooter}>
-                    <div style={styles.categoryTag}>
-                      {getCategoryIcon(item.category)}
-                      {item.category}
+
+                  {/* Content */}
+                  <div style={styles.menuContent}>
+                    <div style={styles.menuHeader}>
+                      <h3 style={styles.menuTitle}>{item.name}</h3>
+                      <span style={styles.menuPrice}>{formatPrice(item.price)}</span>
                     </div>
 
-                    {item.available ? (
-                      cart[item.id] ? (
-                        <div style={styles.quantityControl}>
+                    <p style={styles.menuDescription}>{item.description}</p>
+
+                    <div style={styles.menuFooter}>
+                      <div style={styles.categoryTag}>
+                        {getCategoryIcon(item.category)}
+                        {item.category}
+                      </div>
+
+                      {item.available ? (
+                        qty > 0 ? (
+                          <div style={styles.quantityControl}>
+                            <button
+                              style={styles.quantityButton}
+                              onClick={() => updateQty(item.id, Math.max(0, qty - 1))} // ⬅️ id_menu = item.id
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span style={styles.quantity}>{qty}</span>
+                            <button
+                              style={styles.quantityButton}
+                              onClick={() => updateQty(item.id, qty + 1)}
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            style={styles.quantityButton}
-                            onClick={() => updateQuantity(item.id, -1)}
+                            style={styles.addToCartButton}
+                            onClick={() => addToCart(toLegacyCartItem(item), 1)} // ⬅️ konversi ke legacy
                           >
-                            <Minus size={14} />
+                            <Plus size={16} /> Tambah
                           </button>
-                          <span style={styles.quantity}>{cart[item.id]}</span>
-                          <button
-                            style={styles.quantityButton}
-                            onClick={() => updateQuantity(item.id, 1)}
-                          >
-                            <Plus size={14} />
-                          </button>
-                        </div>
+                        )
                       ) : (
                         <button
-                          style={styles.addToCartButton}
-                          onClick={() => updateQuantity(item.id, 1)}
+                          style={{ ...styles.addToCartButton, ...styles.addToCartButtonDisabled }}
+                          disabled
                         >
-                          <Plus size={16} />
-                          Tambah
+                          Habis
                         </button>
-                      )
-                    ) : (
-                      <button
-                        style={{
-                          ...styles.addToCartButton,
-                          ...styles.addToCartButtonDisabled
-                        }}
-                        disabled
-                      >
-                        Habis
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -644,7 +615,6 @@ const MenuListPage = () => {
               ...styles.floatingCart,
               ...(cartHover ? styles.floatingCartHover : {})
             }}
-            className="floating-cart"
             onClick={handleCartClick}
             onMouseEnter={() => setCartHover(true)}
             onMouseLeave={() => setCartHover(false)}

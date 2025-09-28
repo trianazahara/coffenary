@@ -5,7 +5,7 @@ const db = require("../config/db");
 router.get("/:id_cabang", async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id_meja, nomor_meja FROM tempat_duduk WHERE id_cabang = ? ORDER BY nomor_meja ASC",
+      "SELECT id_meja, nomor_meja, kapasitas FROM tempat_duduk WHERE id_cabang = ? ORDER BY nomor_meja ASC",
       [req.params.id_cabang]
     );
     res.json(rows);

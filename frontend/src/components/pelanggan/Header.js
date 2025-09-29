@@ -295,7 +295,7 @@ const Header = () => {
     { path: '/pelanggan/menu', label: 'Menu', icon: UtensilsCrossed },
     { path: '/pelanggan/history', label: 'History', icon: History },
     { path: '/about', label: 'About Us', icon: Info },
-    { path: '/contact', label: 'Contact', icon: Phone }
+    // { path: '/contact', label: 'Contact', icon: Phone }
   ];
 
   const isActive = (path) => location.pathname === path;

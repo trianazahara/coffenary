@@ -24,6 +24,7 @@ import ReceiptPage from "./pages/pelanggan/ReceiptPage";
 import ProfilePage from "./pages/pelanggan/ProfilePage";
 import OrderHistoryPage from "./pages/pelanggan/OrderHistoryPage";
 import CheckoutPage from "./pages/pelanggan/CheckoutPage";
+import ForgotPasswordPage from './pages/admin/ForgotPasswordPage'; 
 
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
         {/* Halaman Login Admin (Publik) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/" element={<UserLoginPage />} />
+        <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} /> {/* Route untuk lupa password admin */}
 
         {/* Halaman Pilih Cabang (Dilindungi) */}
         <Route path="/pilih-cabang" element={<AdminPrivateRoute><PilihCabangPage /></AdminPrivateRoute>} />

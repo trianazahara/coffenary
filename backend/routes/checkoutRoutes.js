@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const checkoutController = require('../controllers/checkoutController');
+const { checkout } = require('../controllers/checkoutController');
+// jika perlu auth: const { protect } = require('../middleware/authMiddleware');
 
-router.post('/', checkoutController.checkout); // POST /api/checkout
+router.post('/', checkout);
 
 module.exports = router;

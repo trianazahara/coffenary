@@ -579,7 +579,7 @@ const CartPage = () => {
               onMouseLeave={() => setHoveredButton(null)}
             >
               <CreditCard size={18} />
-              Lanjut ke Pembayaran
+              Checkout
               <ArrowRight size={16} />
             </button>
 

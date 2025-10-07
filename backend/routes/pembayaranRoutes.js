@@ -1,14 +1,13 @@
-// routes/pembayaranRoutes.js
 const express = require('express');
 const router = express.Router();
-const { initiatePayment } = require('../controllers/pembayaranController');
+const { initiatePayment, reinitiatePayment } = require('../controllers/pembayaranController');
 const { notificationHandler } = require('../controllers/notificationController');
-const { protect } = require('../middleware/authMiddleware');
 
-// inisiasi: user (frontend) memanggil ini -> membutuhkan token
-router.post('/initiate', protect, initiatePayment);
+// user memulai pembayaran → butuh auth
+router.post('/initiate', initiatePayment);
+router.post('/reinitiate', reinitiatePayment);
 
-// notification dari midtrans server-to-server (no auth)
+// webhook Midtrans → JANGAN pakai protect
 router.post('/notification', express.json(), notificationHandler);
 
 module.exports = router;

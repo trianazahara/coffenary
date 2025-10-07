@@ -648,7 +648,7 @@ const CartPage = () => {
             <div style={styles.summaryTotal}>
               <span style={styles.totalLabel}>Total Pembayaran</span>
               <span style={styles.totalValue}>
-                {formatPrice(subtotal + subtotal * 0.1)}
+                {formatPrice(subtotal + subtotal)}
               </span>
             </div>
 
@@ -662,7 +662,7 @@ const CartPage = () => {
               onMouseLeave={() => setHoveredButton(null)}
             >
               <CreditCard size={18} />
-              Lanjut ke Pembayaran
+              Checkout
               <ArrowRight size={16} />
             </button>
 

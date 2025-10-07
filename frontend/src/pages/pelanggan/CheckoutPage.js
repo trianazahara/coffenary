@@ -361,7 +361,7 @@ const CheckoutPage = ({ onSuccess }) => {
   const [hoverState, setHoverState] = useState({});
 
   const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+  const total = subtotal;
 
   useEffect(() => {
     if (type === "makan_di_tempat" && selectedBranch?.id_cabang) {
@@ -385,13 +385,37 @@ const CheckoutPage = ({ onSuccess }) => {
       setSuccess("");
 
       // Validasi
+      if (!user?.id_pengguna) {
+        setError("Anda harus login untuk melanjutkan.");
+        setLoading(false);
+        return;
+      }
+      if (!selectedBranch?.id_cabang) {
+        setError("Cabang belum dipilih.");
+        setLoading(false);
+        return;
+      }
       if (type === "makan_di_tempat" && !selectedTable) {
         setError("Harap pilih meja untuk dine in");
         setLoading(false);
         return;
       }
+      if (!cartItems?.length) {
+        setError("Keranjang kosong");
+        setLoading(false);
+        return;
+      }
 
-      const payload = {
+      // Bentuk payload items sesuai backend
+      const itemsPayload = cartItems.map(it => ({
+        id_menu: it.id_menu,
+        jumlah: Number(it.qty),
+        harga: Number(it.harga),
+        nama: it.nama_menu || it.nama || it.name || "Item"
+      }));
+
+      // 1) Buat pesanan
+      const coRes = await axios.post("http://localhost:5000/api/checkout", {
         id_pengguna: user.id_pengguna,
         id_cabang: selectedBranch.id_cabang,
         tipe_pesanan: type,
@@ -403,24 +427,68 @@ const CheckoutPage = ({ onSuccess }) => {
           catatan: it.notes || null
         })),
         catatan: note
-      };
+      });
 
-      console.log('Checkout payload:', payload);
+      const { id_pesanan, nomorPesanan, total_harga } = coRes.data;
 
-      const res = await axios.post("http://localhost:5000/api/checkout", payload);
-      clearCart();
-      setSuccess(`Checkout berhasil! Nomor Pesanan: ${res.data.nomorPesanan}`);
-      
-      if (onSuccess) onSuccess(res.data);
+      // 2) Inisiasi pembayaran (perlu token Bearer – ambil dari AuthContext atau localStorage)
+      const bearer =
+        AuthContext.token ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken");
 
-      // Redirect setelah 3 detik
-      setTimeout(() => {
-        navigate('/pelanggan/invoices');
-      }, 3000);
+      const initRes = await axios.post(
+        "http://localhost:5000/api/pembayaran/initiate",
+        {
+          id_pesanan,
+          total_harga: Math.round(Number(total_harga)), // pastikan integer
+          customer: {
+            first_name: user?.nama_lengkap?.split(" ")?.[0] || "Pelanggan",
+            last_name: (user?.nama_lengkap?.split(" ")?.slice(1) || []).join(" "),
+            email: user?.email || "user@example.com",
+            phone: user?.telepon || ""
+          },
+          items: itemsPayload
+        },
+        bearer ? { headers: { Authorization: `Bearer ${bearer}` } } : undefined
+      );
 
+      const snapToken = initRes.data?.snap?.token;
+      if (!snapToken) {
+        setError("Gagal mendapatkan token pembayaran.");
+        setLoading(false);
+        return;
+      }
+
+      // 3) Panggil Snap popup
+      if (!window.snap || typeof window.snap.pay !== "function") {
+        setError("Snap.js belum termuat. Muat ulang halaman lalu coba lagi.");
+        setLoading(false);
+        return;
+      }
+
+      window.snap.pay(snapToken, {
+        onSuccess: function () {
+          clearCart();
+          setSuccess(`Checkout berhasil! Nomor Pesanan: ${nomorPesanan}`);
+          navigate(`/pelanggan/status-pesanan/${id_pesanan}`);
+        },
+        onPending: function () {
+          // pembayaran menunggu — tetap arahkan ke halaman status
+          clearCart();
+          navigate(`/pelanggan/status-pesanan/${id_pesanan}`);
+        },
+        onError: function (err) {
+          console.error(err);
+          setError("Pembayaran gagal. Silakan coba lagi.");
+        },
+        onClose: function () {
+          // user menutup popup tanpa bayar — tidak mengubah cart
+        }
+      });
     } catch (err) {
-      console.error('Checkout error:', err);
-      setError(err.response?.data?.message || "Checkout gagal! Silakan coba lagi.");
+      console.error(err);
+      setError(err?.response?.data?.message || "Checkout/pembayaran gagal.");
     } finally {
       setLoading(false);
     }

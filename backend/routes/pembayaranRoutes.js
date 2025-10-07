@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { initiatePayment } = require('../controllers/pembayaranController');
+const { initiatePayment, reinitiatePayment } = require('../controllers/pembayaranController');
 const { notificationHandler } = require('../controllers/notificationController');
-const { protect } = require('../middleware/authMiddleware');
 
 // user memulai pembayaran → butuh auth
-router.post('/initiate', /*protect, */initiatePayment);
+router.post('/initiate', initiatePayment);
+router.post('/reinitiate', reinitiatePayment);
 
 // webhook Midtrans → JANGAN pakai protect
 router.post('/notification', express.json(), notificationHandler);

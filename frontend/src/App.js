@@ -24,6 +24,7 @@ import ReceiptPage from "./pages/pelanggan/ReceiptPage";
 import ProfilePage from "./pages/pelanggan/ProfilePage";
 import OrderHistoryPage from "./pages/pelanggan/OrderHistoryPage";
 import CheckoutPage from "./pages/pelanggan/CheckoutPage";
+import OrderDetailPage from "./pages/pelanggan/OrderDetailPage";
 
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/pelanggan/payment/:id_pesanan" element={<PaymentPage />} />
+        <Route path="/pelanggan/status-pesanan/:id_pesanan" element={<OrderDetailPage />} />
 
 
 

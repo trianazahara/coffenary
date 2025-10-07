@@ -361,7 +361,7 @@ const CheckoutPage = ({ onSuccess }) => {
   const [hoverState, setHoverState] = useState({});
 
   const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+  const total = subtotal;
 
   useEffect(() => {
     if (type === "makan_di_tempat" && selectedBranch?.id_cabang) {

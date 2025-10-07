@@ -565,7 +565,7 @@ const CartPage = () => {
             <div style={styles.summaryTotal}>
               <span style={styles.totalLabel}>Total Pembayaran</span>
               <span style={styles.totalValue}>
-                {formatPrice(subtotal + subtotal * 0.1)}
+                {formatPrice(subtotal + subtotal)}
               </span>
             </div>
 

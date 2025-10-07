@@ -1,6 +1,6 @@
 // src/pages/UserLoginPage.js
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { Coffee, Mail, Lock } from 'lucide-react';
@@ -35,6 +35,53 @@ const styles = {
     animation: 'bubbleFloat 12s ease-in-out infinite',
     boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.6)'
   },
+  buttonHover: {
+        backgroundColor: '#047857'
+    },
+
+     linksContainer: {
+        marginTop: '1.5rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '0.875rem',
+        color: '#6b7280',
+        animation: 'slideUp 1.8s ease-out'
+    },
+    link: {
+        color: '#059669',
+        fontWeight: '600',
+        textDecoration: 'none',
+        transition: 'color 0.2s'
+    },
+    forgotLinkContainer: {
+        marginTop: '1.5rem',
+        textAlign: 'right',
+        fontSize: '0.875rem',
+    },
+    registerContainer: {
+        marginTop: '1.25rem',
+        textAlign: 'center',
+        fontSize: '0.875rem',
+        color: '#6b7280'
+    },
+    link: {
+        color: '#059669',
+        fontWeight: '600',
+        textDecoration: 'none',
+        transition: 'color 0.2s'
+    },
+    registerLink: { // Style khusus untuk link registrasi agar di baris baru
+        color: '#059669',
+        fontWeight: '600',
+        textDecoration: 'none',
+        display: 'block',
+        marginTop: '0.25rem',
+        transition: 'color 0.2s'
+    },
+    linkHover: {
+        color: '#047857'
+    },
   coffeeBean: {
     position: 'absolute',
     width: '20px',
@@ -460,6 +507,31 @@ const UserLoginPage = () => {
             {isLoading ? 'Memproses...' : 'Login'}
           </button>
         </form>
+
+        <div style={styles.forgotLinkContainer}>
+                    <Link 
+                        to="/forgot-password" 
+                        style={styles.link}
+                        onMouseEnter={(e) => e.currentTarget.style.color = styles.linkHover.color}
+                        onMouseLeave={(e) => e.currentTarget.style.color = styles.link.color}
+                    >
+                        Lupa Password?
+                    </Link>
+                </div>
+
+                {/* Wadah untuk "Registrasi" di tengah */}
+                <div style={styles.registerContainer}>
+                    <span>Belum punya akun?</span>
+                    <Link 
+                        to="/register" 
+                        style={styles.registerLink}
+                        onMouseEnter={(e) => e.currentTarget.style.color = styles.linkHover.color}
+                        onMouseLeave={(e) => e.currentTarget.style.color = styles.registerLink.color}
+                    >
+                        Registrasi
+                    </Link>
+                </div>
+
       </div>
     </div>
   );

@@ -329,7 +329,7 @@ const MenuListPage = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // ⬇️ ambil dari CartContext
+
   const { cartItems, addToCart, updateQty } = useContext(CartContext);
 
   const [menuItems, setMenuItems] = useState([]);
@@ -340,8 +340,12 @@ const MenuListPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('semua');
   const [searchFocus, setSearchFocus] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [cart, setCart] = useState({});
+  const [cartNotes, setCartNotes] = useState({}); // Untuk menyimpan catatan per item
   const [cartHover, setCartHover] = useState(false);
-
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [currentNoteItem, setCurrentNoteItem] = useState(null);
+  
   const categories = [
     { id: 'semua', label: 'Semua', icon: <Filter size={16} /> },
     { id: 'minuman', label: 'Minuman', icon: <Coffee size={16} /> },

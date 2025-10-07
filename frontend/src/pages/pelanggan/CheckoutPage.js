@@ -420,7 +420,12 @@ const CheckoutPage = ({ onSuccess }) => {
         id_cabang: selectedBranch.id_cabang,
         tipe_pesanan: type,
         ...(type === "makan_di_tempat" && { id_meja: selectedTable }),
-        items: itemsPayload,
+        items: cartItems.map(it => ({
+          id_menu: it.id_menu,
+          jumlah: it.qty,
+          harga: it.harga,
+          catatan: it.notes || null
+        })),
         catatan: note
       });
 
@@ -730,6 +735,17 @@ const CheckoutPage = ({ onSuccess }) => {
                   <div>
                     <div style={styles.itemName}>{item.nama_menu}</div>
                     <div style={styles.itemQty}>{item.qty} x {formatPrice(item.harga)}</div>
+                    {/* Tambahkan ini untuk tampilkan notes */}
+                    {item.notes && (
+                      <div style={{ 
+                        fontSize: '0.8rem', 
+                        color: '#64748b', 
+                        fontStyle: 'italic',
+                        marginTop: '0.25rem'
+                      }}>
+                        💬 {item.notes}
+                      </div>
+                    )}
                   </div>
                   <div style={styles.itemPrice}>
                     {formatPrice(item.harga * item.qty)}

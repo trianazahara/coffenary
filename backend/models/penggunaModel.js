@@ -42,6 +42,22 @@ static async findAll(filter = {}) {
         return result;
     }
 
+    static async setOtp(email, otp_hash, otp_expiry) {
+        const [result] = await pool.query(
+            'UPDATE pengguna SET otp_hash = ?, otp_expiry = ? WHERE email = ?',
+            [otp_hash, otp_expiry, email]
+        );
+        return result;
+    }
+
+    static async resetPassword(email, kata_sandi_hash) {
+        const [result] = await pool.query(
+            'UPDATE pengguna SET kata_sandi_hash = ?, otp_hash = NULL, otp_expiry = NULL WHERE email = ?',
+            [kata_sandi_hash, email]
+        );
+        return result;
+    }
+
     static async update(id, data) {
     // Ambil field yang mungkin diubah
     const { nama_lengkap, telepon, peran, is_aktif, kata_sandi_hash } = data;

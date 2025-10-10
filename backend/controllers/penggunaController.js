@@ -80,29 +80,59 @@ const updatePengguna = async (req, res) => {
 };
 
 
-const updateProfile = async (req, res) => {
+const getProfile = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { nama_lengkap, identitas } = req.body;
+    console.log("📥 Mengambil profil user ID:", req.user.id);
 
-    let updateData = { nama_lengkap, identitas };
-
-    if (req.file) {
-      updateData.foto = req.file.path.replace(/\\/g, "/");
-    }
-
-    const result = await Pengguna.update(id, updateData);
-
-    if (result.affectedRows === 0) {
+    const pengguna = await Pengguna.findByPk(req.user.id);
+    if (!pengguna) {
+      console.error("❌ Pengguna tidak ditemukan:", req.user.id);
       return res.status(404).json({ message: "Pengguna tidak ditemukan" });
     }
 
-    res.json({ message: "Profil berhasil diperbarui" });
-  } catch (error) {
-    console.error("Error update profile:", error);
-    res.status(500).json({ message: "Server error" });
+    const { kata_sandi_hash, ...userData } = pengguna.toJSON();
+    res.json(userData);
+
+  } catch (err) {
+    console.error("❌ Error getProfile:", err);
+    res.status(500).json({ message: "Gagal mengambil data profil", error: err.message });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    console.log("✏️ Update profil user ID:", req.params.id);
+
+    const pengguna = await Pengguna.findByPk(req.params.id);
+    if (!pengguna) {
+      console.error("❌ Pengguna tidak ditemukan:", req.params.id);
+      return res.status(404).json({ message: "Pengguna tidak ditemukan" });
+    }
+
+    // Update data dasar
+    pengguna.nama_lengkap = req.body.namaLengkap || pengguna.nama_lengkap;
+    pengguna.email = req.body.email || pengguna.email;
+
+    // Jika upload foto baru
+    if (req.file) {
+      if (pengguna.foto) {
+        const oldPath = path.join(__dirname, "../uploads", pengguna.foto);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      pengguna.foto = req.file.filename;
+    }
+
+    await pengguna.save();
+
+    const { kata_sandi_hash, ...userData } = pengguna.toJSON();
+    res.json(userData);
+
+    console.log("✅ Profil berhasil diperbarui:", req.params.id);
+  } catch (err) {
+    console.error("❌ Error updateProfile:", err);
+    res.status(500).json({ message: "Gagal memperbarui profil", error: err.message });
   }
 };
 
 
-module.exports = { getAllPengguna, createPenggunaByAdmin, updatePengguna, updateProfile };
+module.exports = { getAllPengguna, createPenggunaByAdmin, updatePengguna, updateProfile, getProfile };

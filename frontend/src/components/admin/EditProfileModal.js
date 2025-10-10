@@ -1,97 +1,98 @@
-import React, { useState, useEffect } from "react";
-import EditProfileModal from "../../components/admin/EditProfileModal";
+import React, { useState } from "react";
 
-const ProfilePage = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userData, setUserData] = useState(null);
+const EditProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
+  const [formData, setFormData] = useState({
+    namaLengkap: initialData?.namaLengkap || "",
+    email: initialData?.email || "",
+    foto: null,
+  });
 
-  // Ambil token dari localStorage
-  const token = localStorage.getItem("token");
+  if (!isOpen) return null; // jangan render kalau modal ditutup
 
-  // Fetch data profil user
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/user/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
-        setUserData(data);
-      } catch (err) {
-        console.error("Gagal ambil profil:", err);
-      }
-    };
-
-    fetchProfile();
-  }, [token]);
-
-  const handleSave = async (formData) => {
-    try {
-      const res = await fetch("http://localhost:5000/api/user/profile", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData, // penting: biarin FormData, jangan di-JSON.stringify
-      });
-
-      if (!res.ok) throw new Error("Gagal update profil");
-
-      const updated = await res.json();
-      setUserData(updated); // update data di state
-    } catch (err) {
-      console.error(err);
-    }
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
   };
 
-  if (!userData) {
-    return <p className="p-6">Loading profil...</p>;
-  }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const form = new FormData();
+    form.append("namaLengkap", formData.namaLengkap);
+    form.append("email", formData.email);
+    if (formData.foto) {
+      form.append("foto", formData.foto);
+    }
+    onSave(form); // kirim ke ProfilePage
+    onClose();    // tutup modal
+  };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800">Profil Saya</h1>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">Edit Profil</h2>
 
-        {/* Data singkat */}
-        <div className="mb-6 space-y-3 text-gray-700">
-          <p>
-            <span className="font-medium">Nama: </span>
-            {userData.namaLengkap}
-          </p>
-          <p>
-            <span className="font-medium">Identitas: </span>
-            {userData.identitas}
-          </p>
-          {userData.foto && (
-            <img
-              src={`http://localhost:5000/uploads/${userData.foto}`}
-              alt="Foto Profil"
-              className="w-24 h-24 object-cover rounded-full border"
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Nama Lengkap
+            </label>
+            <input
+              type="text"
+              name="namaLengkap"
+              value={formData.namaLengkap}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-lg"
             />
-          )}
-        </div>
+          </div>
 
-        {/* Tombol edit */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
-        >
-          Edit Profil
-        </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Foto Profil
+            </label>
+            <input
+              type="file"
+              name="foto"
+              accept="image/*"
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-300 rounded-lg"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg"
+            >
+              Simpan
+            </button>
+          </div>
+        </form>
       </div>
-
-      {/* Modal */}
-      <EditProfileModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        initialData={userData}
-      />
     </div>
   );
 };
 
-export default ProfilePage;
+export default EditProfileModal;

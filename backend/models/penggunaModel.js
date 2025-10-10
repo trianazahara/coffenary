@@ -61,8 +61,24 @@ static async findAll(filter = {}) {
 
     const [result] = await pool.query(query, params);
     return result;
+
+}
+static async findById(id) {
+    const [rows] = await pool.query('SELECT id_pengguna, username, email, nama_lengkap, telepon, peran, is_aktif, foto FROM pengguna WHERE id_pengguna = ?', [id]);
+    return rows[0];
+}
+
+static async updateProfile(id, data) {
+    const { nama_lengkap, email, foto } = data;
+    const [result] = await pool.query(
+        'UPDATE pengguna SET nama_lengkap = ?, email = ?, foto = ? WHERE id_pengguna = ?',
+        [nama_lengkap, email, foto, id]
+    );
+    return result;
 }
 }
+
+
 
 
 

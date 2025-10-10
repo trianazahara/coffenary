@@ -16,15 +16,15 @@ const login = async (req, res) => {
         }
 
         // ✅ Tambahin nama_lengkap ke payload
-        const token = jwt.sign(
-            { 
-                id: pengguna.id_pengguna, 
-                peran: pengguna.peran, 
-                nama_lengkap: pengguna.nama_lengkap 
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        );
+       const token = jwt.sign(
+  { 
+    id: pengguna.id_pengguna, // ← ambil dari DB, tapi simpan ke token sebagai "id"
+    peran: pengguna.peran, 
+    nama_lengkap: pengguna.nama_lengkap 
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: '8h' }
+);
         
         const { kata_sandi_hash: _, ...dataPengguna } = pengguna;
         res.json({ token, pengguna: dataPengguna });

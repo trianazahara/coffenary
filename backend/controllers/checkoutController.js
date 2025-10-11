@@ -27,8 +27,8 @@ exports.checkout = async (req, res) => {
     // Insert pesanan
     const [pesananRes] = await conn.query(
       `INSERT INTO pesanan 
-        (nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja, status, total_harga, catatan, tanggal_dibuat) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        (nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja, status, total_harga, tanggal_dibuat) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [nomorPesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja || null, 'pending', total, catatan || null]
     );
     const id_pesanan = pesananRes.insertId;

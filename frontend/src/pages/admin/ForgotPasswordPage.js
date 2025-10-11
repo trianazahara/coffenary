@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Coffee, Mail, Lock, KeyRound } from 'lucide-react';
 
+
 // --- STYLING LENGKAP & ANIMASI (Disalin dari halaman login) ---
 const styles = {
     container: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100vw', margin: 0, padding: 0, background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 30%, #6ee7b7 60%, #34d399 100%)', position: 'fixed', top: 0, left: 0, overflow: 'hidden' },

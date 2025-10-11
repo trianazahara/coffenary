@@ -9,6 +9,10 @@ class Pengguna {
         );
         return { id: result.insertId, ...data };
     }
+static async findById(id) {
+    const [rows] = await pool.query('SELECT * FROM pengguna WHERE id_pengguna = ?', [id]);
+    return rows[0];
+}
 
     static async findByEmail(email) {
         const [rows] = await pool.query('SELECT * FROM pengguna WHERE email = ?', [email]);
@@ -33,15 +37,31 @@ static async findAll(filter = {}) {
     return rows;
 }
 
-    static async update(id, data) {
-        const { nama_lengkap, telepon, peran, is_aktif } = data;
-        const [result] = await pool.query(
-            'UPDATE pengguna SET nama_lengkap = ?, telepon = ?, peran = ?, is_aktif = ? WHERE id_pengguna = ?',
-            [nama_lengkap, telepon, peran, is_aktif, id]
-        );
-        return result;
+   static async update(id, data) {
+    const { nama_lengkap, telepon, peran, is_aktif, kata_sandi_hash } = data;
+
+    // Ambil data lama dari database
+    const [oldRows] = await pool.query('SELECT * FROM pengguna WHERE id_pengguna = ?', [id]);
+    const oldData = oldRows[0];
+
+    // Gunakan nilai lama jika data baru tidak dikirim
+    const finalPeran = peran ?? oldData.peran;
+    const finalIsAktif = is_aktif ?? oldData.is_aktif;
+
+    let query = 'UPDATE pengguna SET nama_lengkap = ?, telepon = ?, peran = ?, is_aktif = ?';
+    const params = [nama_lengkap, telepon, finalPeran, finalIsAktif];
+
+    if (kata_sandi_hash) {
+        query += ', kata_sandi_hash = ?';
+        params.push(kata_sandi_hash);
     }
 
+    query += ' WHERE id_pengguna = ?';
+    params.push(id);
+
+    const [result] = await pool.query(query, params);
+    return result;
+}
     static async setOtp(email, otp_hash, otp_expiry) {
         const [result] = await pool.query(
             'UPDATE pengguna SET otp_hash = ?, otp_expiry = ? WHERE email = ?',
@@ -58,25 +78,7 @@ static async findAll(filter = {}) {
         return result;
     }
 
-    static async update(id, data) {
-    // Ambil field yang mungkin diubah
-    const { nama_lengkap, telepon, peran, is_aktif, kata_sandi_hash } = data;
-
-    let query = 'UPDATE pengguna SET nama_lengkap = ?, telepon = ?, peran = ?, is_aktif = ?';
-    const params = [nama_lengkap, telepon, peran, is_aktif];
-
-    // Jika ada password baru (sudah di-hash), tambahkan ke query
-    if (kata_sandi_hash) {
-        query += ', kata_sandi_hash = ?';
-        params.push(kata_sandi_hash);
-    }
-
-    query += ' WHERE id_pengguna = ?';
-    params.push(id);
-
-    const [result] = await pool.query(query, params);
-    return result;
-}
+ 
 }
 
 

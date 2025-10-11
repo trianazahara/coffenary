@@ -1,0 +1,26 @@
+[
+  {
+    "id": 4,
+    "aktivitas": "Menambahkan pengguna 'sdsss' sebagai staff",
+    "admin": "Admin Utama",
+    "waktu": "10 Oktober 2025 pukul 15.25"
+  },
+  {
+    "id": 3,
+    "aktivitas": "Menambahkan pengguna 'osdksdjhsj' sebagai staff",
+    "admin": "Admin Utama",
+    "waktu": "10 Oktober 2025 pukul 15.24"
+  },
+  {
+    "id": 2,
+    "aktivitas": "Mengupdate data pengguna ID 4",
+    "admin": "Admin Utama",
+    "waktu": "10 Oktober 2025 pukul 15.20"
+  },
+  {
+    "id": 1,
+    "aktivitas": "Menambahkan menu 'sjdns' di cabang 1",
+    "admin": "Admin Utama",
+    "waktu": "10 Oktober 2025 pukul 15.19"
+  }
+]

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import Header from '../../components/admin/AdminHeader'; // ✅ import header admin
 
 const AdminDashboard = () => {
     const { selectedBranch, token } = useContext(AuthContext);
-    // 1. Tambahkan state baru di sini
     const [stats, setStats] = useState({ 
         totalOrders: 0, 
         totalRevenue: 0, 
@@ -20,7 +20,10 @@ const AdminDashboard = () => {
                 setIsLoading(true);
                 try {
                     const config = { headers: { Authorization: `Bearer ${token}` } };
-                    const response = await axios.get(`http://localhost:5000/api/pesanan/${selectedBranch.id_cabang}/stats`, config);
+                    const response = await axios.get(
+                        `http://localhost:5000/api/pesanan/${selectedBranch.id_cabang}/stats`, 
+                        config
+                    );
                     setStats(response.data);
                 } catch (error) {
                     console.error("Gagal memuat statistik", error);
@@ -33,6 +36,7 @@ const AdminDashboard = () => {
     }, [selectedBranch, token]);
 
     const styles = {
+        page: { paddingTop: '90px', padding: '2rem' }, // tambahkan paddingTop karena header fixed
         title: { fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' },
         subtitle: { color: '#4b5563', marginBottom: '2rem', fontSize: '1rem' },
         grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' },
@@ -43,38 +47,38 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div>
-            <h1 style={styles.title}>Dashboard</h1>
-            <p style={styles.subtitle}>
-                Ringkasan aktivitas untuk cabang: <span style={{ fontWeight: 'bold' }}>{selectedBranch?.nama_cabang}</span>
-            </p>
+        <>
+            <Header />  {/* ✅ tampilkan header admin */}
+            <div style={styles.page}>
+                <h1 style={styles.title}>Dashboard</h1>
+                <p style={styles.subtitle}>
+                    Ringkasan aktivitas untuk cabang: <span style={{ fontWeight: 'bold' }}>{selectedBranch?.nama_cabang}</span>
+                </p>
 
-            <div style={styles.grid}>
-                {/* --- Kartu Statistik Harian --- */}
-                <div style={styles.card}>
-                    <h3 style={styles.cardTitle}>Total Pesanan Hari Ini</h3>
-                    <p style={styles.cardStat}>{isLoading ? '...' : stats.totalOrders}</p>
-                </div>
-                <div style={styles.card}>
-                    <h3 style={styles.cardTitle}>Pendapatan Hari Ini</h3>
-                    <p style={styles.cardStat}>{isLoading ? '...' : `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`}</p>
-                </div>
-                <div style={styles.card}>
-                    <h3 style={styles.cardTitle}>Menu Terlaris Hari Ini</h3>
-                    <p style={styles.cardStatSmall}>{isLoading ? '...' : stats.topMenu}</p>
-                </div>
-                
-                {/* --- 2. Kartu Statistik Keseluruhan (BARU) --- */}
-                <div style={styles.card}>
-                    <h3 style={styles.cardTitle}>Total Seluruh Pesanan</h3>
-                    <p style={styles.cardStat}>{isLoading ? '...' : stats.totalLifetimeOrders}</p>
-                </div>
-                <div style={styles.card}>
-                    <h3 style={styles.cardTitle}>Total Seluruh Pendapatan</h3>
-                    <p style={styles.cardStat}>{isLoading ? '...' : `Rp ${stats.totalLifetimeRevenue.toLocaleString('id-ID')}`}</p>
+                <div style={styles.grid}>
+                    <div style={styles.card}>
+                        <h3 style={styles.cardTitle}>Total Pesanan Hari Ini</h3>
+                        <p style={styles.cardStat}>{isLoading ? '...' : stats.totalOrders}</p>
+                    </div>
+                    <div style={styles.card}>
+                        <h3 style={styles.cardTitle}>Pendapatan Hari Ini</h3>
+                        <p style={styles.cardStat}>{isLoading ? '...' : `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`}</p>
+                    </div>
+                    <div style={styles.card}>
+                        <h3 style={styles.cardTitle}>Menu Terlaris Hari Ini</h3>
+                        <p style={styles.cardStatSmall}>{isLoading ? '...' : stats.topMenu}</p>
+                    </div>
+                    <div style={styles.card}>
+                        <h3 style={styles.cardTitle}>Total Seluruh Pesanan</h3>
+                        <p style={styles.cardStat}>{isLoading ? '...' : stats.totalLifetimeOrders}</p>
+                    </div>
+                    <div style={styles.card}>
+                        <h3 style={styles.cardTitle}>Total Seluruh Pendapatan</h3>
+                        <p style={styles.cardStat}>{isLoading ? '...' : `Rp ${stats.totalLifetimeRevenue.toLocaleString('id-ID')}`}</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Mail, Lock, Phone, User, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
-import Header from '../components/pelanggan/Header';
 
 const styles = {
   container: { minHeight: '100vh', backgroundColor: '#f8fafc', paddingTop: 70 },
@@ -89,8 +88,6 @@ export default function RegisterPage() {
 
   return (
     <div style={styles.container}>
-      {/* Kalau halaman pelanggan selalu tampil header pelanggan */}
-      <Header />
 
       <main style={styles.main}>
         <div style={styles.card}>

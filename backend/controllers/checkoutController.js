@@ -29,7 +29,7 @@ exports.checkout = async (req, res) => {
       `INSERT INTO pesanan 
         (nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja, status, total_harga, tanggal_dibuat) 
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [nomorPesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja || null, 'pending', total, catatan || null]
+      [nomorPesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja || null, 'pending', total]
     );
     const id_pesanan = pesananRes.insertId;
 
@@ -39,9 +39,9 @@ exports.checkout = async (req, res) => {
       const qty = Number(it.jumlah || it.qty) || 0;
       await conn.query(
         `INSERT INTO pesanan_item 
-          (id_pesanan, id_menu, jumlah, harga_satuan, subtotal, tanggal_dibuat) 
-         VALUES (?, ?, ?, ?, ?, NOW())`,
-        [id_pesanan, it.id_menu, qty, harga, harga * qty]
+          (id_pesanan, id_menu, jumlah, catatan, harga_satuan, subtotal, tanggal_dibuat) 
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        [id_pesanan, it.id_menu, qty, it.catatan || it.note || null, harga, harga * qty]
       );
     }
 

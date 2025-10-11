@@ -335,10 +335,9 @@ if (!document.querySelector('#history-styles')) {
 }
 
 const OrderHistoryPage = () => {
-  const { user } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
   const navigate = useNavigate();
   
-  // State management
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -348,7 +347,6 @@ const OrderHistoryPage = () => {
   const [searchFocus, setSearchFocus] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
 
-  // Status definitions
   const statusOptions = [
     { id: 'semua', label: 'Semua', icon: <Filter size={16} /> },
     { id: 'pending', label: 'Menunggu', icon: <Clock size={16} /> },
@@ -361,87 +359,47 @@ const OrderHistoryPage = () => {
 
   useEffect(() => {
     fetchOrderHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders, searchTerm, selectedStatus]);
 
   const fetchOrderHistory = async () => {
     try {
       setLoading(true);
-      // Mock data for now - replace with actual API call
-      // const response = await axios.get('/api/orders/history');
-      
-      // Mock order data
-      const mockOrders = [
-        {
-          id: 1,
-          nomor_pesanan: 'ORD-001-2024',
-          tanggal_dibuat: '2024-01-15T10:30:00Z',
-          status: 'selesai',
-          total_harga: 85000,
-          tipe_pesanan: 'makan_di_tempat',
-          cabang: 'Coffenary Pusat',
-          metode_pembayaran: 'qris',
-          items: [
-            { nama_menu: 'Signature Latte', jumlah: 2, harga_satuan: 35000 },
-            { nama_menu: 'Chocolate Croissant', jumlah: 1, harga_satuan: 15000 }
-          ]
-        },
-        {
-          id: 2,
-          nomor_pesanan: 'ORD-002-2024',
-          tanggal_dibuat: '2024-01-14T14:20:00Z',
-          status: 'dalam_persiapan',
-          total_harga: 42000,
-          tipe_pesanan: 'bawa_pulang',
-          cabang: 'Coffenary Mall',
-          metode_pembayaran: 'tunai',
-          items: [
-            { nama_menu: 'Americano', jumlah: 1, harga_satuan: 25000 },
-            { nama_menu: 'Avocado Toast', jumlah: 1, harga_satuan: 17000 }
-          ]
-        },
-        {
-          id: 3,
-          nomor_pesanan: 'ORD-003-2024',
-          tanggal_dibuat: '2024-01-13T09:15:00Z',
-          status: 'dibatalkan',
-          total_harga: 60000,
-          tipe_pesanan: 'makan_di_tempat',
-          cabang: 'Coffenary Central',
-          metode_pembayaran: 'transfer',
-          items: [
-            { nama_menu: 'Cappuccino', jumlah: 3, harga_satuan: 20000 }
-          ]
-        }
-      ];
-      
-      setOrders(mockOrders);
-    } catch (error) {
-      console.error('Error fetching order history:', error);
-      setError('Gagal memuat riwayat pesanan');
+      setError(null);
+
+      const res = await axios.get('http://localhost:5000/api/pesanan/history', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // backend sudah memberi: id, nomor_pesanan, tanggal_dibuat, status, total_harga, tipe_pesanan, cabang, metode_pembayaran, items[]
+      setOrders(res.data || []);
+    } catch (err) {
+      console.error('Error fetching order history:', err);
+      setError(err.response?.data?.message || 'Gagal memuat riwayat pesanan');
     } finally {
       setLoading(false);
     }
   };
 
   const filterOrders = () => {
-    let filtered = orders;
+    let filtered = [...orders];
 
-    // Filter by status
     if (selectedStatus !== 'semua') {
       filtered = filtered.filter(order => order.status === selectedStatus);
     }
 
-    // Filter by search term
     if (searchTerm) {
+      const q = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
-        order.nomor_pesanan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.cabang.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.items.some(item => 
-          item.nama_menu.toLowerCase().includes(searchTerm.toLowerCase())
+        (order.nomor_pesanan || '').toLowerCase().includes(q) ||
+        (order.cabang || '').toLowerCase().includes(q) ||
+        (order.items || []).some(item => 
+          (item.nama_menu || '').toLowerCase().includes(q)
         )
       );
     }
@@ -460,7 +418,6 @@ const OrderHistoryPage = () => {
     };
 
     const config = statusConfig[status] || statusConfig.pending;
-    
     return (
       <div style={{ ...styles.statusBadge, ...config.style }}>
         {config.icon}
@@ -470,6 +427,7 @@ const OrderHistoryPage = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
@@ -484,21 +442,26 @@ const OrderHistoryPage = () => {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0
-    }).format(price);
+    }).format(Number(price || 0));
   };
 
   const handleViewDetail = (orderId) => {
-    navigate(`/pelanggan/order/${orderId}`);
+    navigate(`/pelanggan/pesanan/${orderId}`);
   };
 
   const handleReorder = (order) => {
-    // Add items to cart and navigate to menu
-    const cartData = {};
-    order.items.forEach(item => {
-      cartData[item.id] = item.jumlah;
-    });
-    localStorage.setItem('cartData', JSON.stringify(cartData));
-    navigate('/pelanggan/menu');
+    // Sesuaikan dengan struktur CartContext (array of items, key: cart_pelanggan)
+    const itemsForCart = (order.items || []).map(it => ({
+      id_menu: it.id_menu,
+      nama_menu: it.nama_menu,
+      harga: Number(it.harga_satuan || 0),
+      qty: Number(it.jumlah || 0),
+    })).filter(x => x.qty > 0);
+
+    try {
+      localStorage.setItem('cart_pelanggan', JSON.stringify(itemsForCart));
+    } catch {}
+    navigate('/pelanggan/cart');
   };
 
   if (loading) {
@@ -612,7 +575,7 @@ const OrderHistoryPage = () => {
                     </div>
                     <div style={styles.orderLocation}>
                       <MapPin size={14} />
-                      {order.cabang} • {order.tipe_pesanan === 'makan_di_tempat' ? 'Makan di tempat' : 'Bawa pulang'}
+                      {(order.cabang || '-')} • {order.tipe_pesanan === 'makan_di_tempat' ? 'Makan di tempat' : 'Bawa pulang'}
                     </div>
                   </div>
                   {getStatusBadge(order.status)}
@@ -622,11 +585,11 @@ const OrderHistoryPage = () => {
                 <div style={styles.orderDetails} className="order-details">
                   <div style={styles.detailItem}>
                     <CreditCard style={styles.detailIcon} />
-                    {order.metode_pembayaran.toUpperCase()}
+                    {(order.metode_pembayaran || '-').toString().toUpperCase()}
                   </div>
                   <div style={styles.detailItem}>
                     <Package style={styles.detailIcon} />
-                    {order.items.length} item
+                    {(order.items || []).length} item
                   </div>
                 </div>
 
@@ -636,12 +599,12 @@ const OrderHistoryPage = () => {
                     <ChefHat size={16} />
                     Menu yang dipesan
                   </div>
-                  {order.items.map((item, itemIndex) => (
+                  {(order.items || []).map((item, itemIndex) => (
                     <div 
                       key={itemIndex} 
                       style={{
                         ...styles.menuItem,
-                        ...(itemIndex === order.items.length - 1 ? styles.menuItemLast : {})
+                        ...(itemIndex === (order.items || []).length - 1 ? styles.menuItemLast : {})
                       }}
                     >
                       <div style={styles.menuItemInfo}>
@@ -651,7 +614,7 @@ const OrderHistoryPage = () => {
                         </div>
                       </div>
                       <div style={styles.menuItemPrice}>
-                        {formatPrice(item.jumlah * item.harga_satuan)}
+                        {formatPrice(Number(item.harga_satuan || 0) * Number(item.jumlah || 0))}
                       </div>
                     </div>
                   ))}

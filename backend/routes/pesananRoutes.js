@@ -1,8 +1,11 @@
 const express = require('express');
+const { getAllPesananByCabang, updateStatusPesanan, getStatsByCabang, getPesananById,getOrderHistory} = require('../controllers/pesananController');
 const db = require('../config/db'); 
-const { getAllPesananByCabang, updateStatusPesanan, getStatsByCabang, getPesananById} = require('../controllers/pesananController');
 const { protect, checkRole } = require('../middleware/authMiddleware');
 const router = express.Router();
+
+router.get('/history', protect, checkRole(['pelanggan']), getOrderHistory);
+
 
 router.get('/:id_cabang', protect, checkRole(['admin', 'staff']), getAllPesananByCabang);
 router.put('/:id_pesanan/status', protect, checkRole(['admin', 'staff']), updateStatusPesanan);
@@ -25,6 +28,7 @@ router.get('/:id_cabang/pending-count', protect, async (req, res) => {
     res.status(500).json({ error: 'Gagal mengambil jumlah pesanan pending' });
   }
 });
+
 
 
 module.exports = router;

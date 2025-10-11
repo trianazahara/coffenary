@@ -3,27 +3,64 @@ const Pengguna = require('../models/penggunaModel');
 const bcrypt = require('bcryptjs');
 
 
-const updatePengguna = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { password, ...otherData } = req.body;
-        
-        const updateData = { ...otherData };
+const updatePenggunaByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-        // Jika admin mengirim password baru, hash password tersebut
-        if (password && password.trim() !== '') {
-            updateData.kata_sandi_hash = await bcrypt.hash(password, 10);
-        }
+    const payload = { ...req.body };
 
-        const result = await Pengguna.update(id, updateData);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
-        }
-        res.json({ message: 'Data pengguna berhasil diperbarui' });
-    } catch (error) {
-        console.error("Error saat update pengguna:", error);
-        res.status(500).json({ message: 'Server Error' });
+    // Jika ada password plain, hash ke kata_sandi_hash dan HAPUS field password
+    if (payload.password && payload.password.trim() !== '') {
+      payload.kata_sandi_hash = await bcrypt.hash(payload.password, 10);
+      delete payload.password;
     }
+
+    // (Opsional) Cek unik email bila diubah
+    if (payload.email) {
+      const existing = await Pengguna.findByEmail(payload.email);
+      if (existing && String(existing.id_pengguna) !== String(id)) {
+        return res.status(400).json({ message: 'Email sudah digunakan pengguna lain.' });
+      }
+    }
+
+    const result = await Pengguna.updateAdmin(id, payload);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+    }
+
+    res.json({ message: 'Data pengguna berhasil diperbarui (admin).' });
+  } catch (error) {
+    console.error('updatePenggunaByAdmin error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+/**
+ * PROFIL diri sendiri: tidak boleh ubah peran/is_aktif
+ * PUT /api/pengguna/me
+ */
+const updateProfilSaya = async (req, res) => {
+  try {
+    const id = req.user?.id;
+
+    const { peran, is_aktif, password, ...others } = req.body; // buang field terlarang
+    const payload = { ...others };
+
+    if (password && password.trim() !== '') {
+      payload.kata_sandi_hash = await bcrypt.hash(password, 10);
+    }
+
+
+    const result = await Pengguna.updateProfile(id, payload);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+    }
+
+    res.json({ message: 'Profil berhasil diperbarui.' });
+  } catch (error) {
+    console.error('updateProfilSaya error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };
 
 const getAllPengguna = async (req, res) => {
@@ -64,4 +101,4 @@ const createPenggunaByAdmin = async (req, res) => {
 
 
 
-module.exports = { getAllPengguna, updatePengguna, createPenggunaByAdmin };
+module.exports = { getAllPengguna, updatePenggunaByAdmin, updateProfilSaya, createPenggunaByAdmin };

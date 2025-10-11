@@ -142,76 +142,64 @@ const getOrderHistory = async (req, res) => {
 };
 
 const getPesananDetailForCustomer = async (req, res) => {
-  try {
-    const { id_pesanan } = req.params;
-    const userId = req.user?.id;
+  const { id_pesanan } = req.params;
+  const id_pengguna = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Token tidak valid (id kosong)' });
-    }
-    if (!id_pesanan) {
-      return res.status(400).json({ message: 'Parameter id_pesanan wajib' });
-    }
+  // + join tempat_duduk (td) untuk ambil nomor_meja
+  const [rows] = await pool.query(`
+    SELECT 
+      p.*, 
+      c.nama_cabang AS cabang,
+      td.nomor_meja
+    FROM pesanan p
+    LEFT JOIN cabang c       ON c.id_cabang = p.id_cabang
+    LEFT JOIN tempat_duduk td ON td.id_meja  = p.id_meja
+    WHERE p.id_pesanan = ? AND p.id_pengguna = ?
+    LIMIT 1
+  `, [id_pesanan, id_pengguna]);
 
+  if (!rows.length) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
 
-    // Cek pesanan by id dulu
-    const [rowsById] = await pool.query(
-      `SELECT p.*, c.nama_cabang AS cabang
-       FROM pesanan p
-       LEFT JOIN cabang c ON c.id_cabang = p.id_cabang
-       WHERE p.id_pesanan = ?
-       LIMIT 1`,
-      [id_pesanan]
-    );
+  const pesanan = rows[0];
 
-    if (!rowsById.length) {
-      return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
-    }
+  // + ambil catatan item
+  const [items] = await pool.query(`
+    SELECT 
+      pi.id_menu,
+      m.nama_menu,
+      pi.jumlah,
+      pi.harga_satuan,
+      pi.subtotal,
+      pi.catatan
+    FROM pesanan_item pi
+    LEFT JOIN menu m ON m.id_menu = pi.id_menu
+    WHERE pi.id_pesanan = ?
+    ORDER BY pi.id_item ASC
+  `, [id_pesanan]);
 
-    const pesanan = rowsById[0];
+  const [pemb] = await pool.query(`
+    SELECT *
+    FROM pembayaran
+    WHERE id_pesanan = ?
+    ORDER BY id_pembayaran DESC
+    LIMIT 1
+  `, [id_pesanan]);
 
-    // Validasi kepemilikan
-    if (Number(pesanan.id_pengguna) !== userId) {
-      return res.status(403).json({ message: 'Tidak berhak melihat pesanan ini' });
-    }
-
-    // Ambil items
-    const [items] = await pool.query(
-      `SELECT pi.id_menu, m.nama_menu, pi.jumlah, pi.harga_satuan, pi.subtotal
-       FROM pesanan_item pi
-       LEFT JOIN menu m ON m.id_menu = pi.id_menu
-       WHERE pi.id_pesanan = ?
-       ORDER BY pi.id_item ASC`,
-      [id_pesanan]
-    );
-
-    // Ambil pembayaran terakhir
-    const [pemb] = await pool.query(
-      `SELECT *
-       FROM pembayaran
-       WHERE id_pesanan = ?
-       ORDER BY id_pembayaran DESC
-       LIMIT 1`,
-      [id_pesanan]
-    );
-
-    return res.json({
-      pesanan: {
-        id: pesanan.id_pesanan,
-        nomor_pesanan: pesanan.nomor_pesanan,
-        tanggal_dibuat: pesanan.tanggal_dibuat,
-        status: pesanan.status,
-        total_harga: pesanan.total_harga,
-        tipe_pesanan: pesanan.tipe_pesanan,
-        cabang: pesanan.cabang,
-        items
-      },
-      pembayaran_terakhir: pemb[0] || null
-    });
-  } catch (e) {
-    console.error('getPesananDetailForCustomer error:', e);
-    return res.status(500).json({ message: 'Server Error' });
-  }
+  res.json({
+    pesanan: {
+      id: pesanan.id_pesanan,
+      nomor_pesanan: pesanan.nomor_pesanan,
+      tanggal_dibuat: pesanan.tanggal_dibuat,
+      status: pesanan.status,
+      total_harga: pesanan.total_harga,
+      tipe_pesanan: pesanan.tipe_pesanan,
+      cabang: pesanan.cabang,
+      id_meja: pesanan.id_meja,
+      nomor_meja: pesanan.nomor_meja,      // <— tambahan
+      items
+    },
+    pembayaran_terakhir: pemb[0] || null
+  });
 };
 
 const recreatePaymentForCustomer = async (req,res)=>{

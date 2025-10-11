@@ -193,7 +193,7 @@ export default function RegisterPage() {
             </button>
 
             <p style={styles.muted}>
-              Sudah punya akun? <Link to="/login">Masuk</Link>
+              Sudah punya akun? <Link to="/">Masuk</Link>
             </p>
           </form>
         </div>

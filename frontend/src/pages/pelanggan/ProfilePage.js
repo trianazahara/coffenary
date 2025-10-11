@@ -277,10 +277,9 @@ if (!document.querySelector('#profile-styles')) {
 }
 
 const ProfilePage = () => {
-  const { user, login } = useContext(AuthContext);
+  const { user, token, setUser } = useContext(AuthContext); // pastikan AuthContext mengekspor setUser
   const navigate = useNavigate();
   
-  // State management
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -290,7 +289,6 @@ const ProfilePage = () => {
   const [focusedInput, setFocusedInput] = useState(null);
   const [avatarHover, setAvatarHover] = useState(false);
   
-  // Form data
   const [formData, setFormData] = useState({
     nama_lengkap: '',
     email: '',
@@ -319,7 +317,6 @@ const ProfilePage = () => {
       ...prev,
       [name]: value
     }));
-    // Clear messages when user starts typing
     if (successMessage || errorMessage) {
       setSuccessMessage('');
       setErrorMessage('');
@@ -327,21 +324,18 @@ const ProfilePage = () => {
   };
 
   const validateForm = () => {
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setErrorMessage('Format email tidak valid');
       return false;
     }
 
-    // Validate phone number (Indonesian format)
     const phoneRegex = /^(\+62|62|0)[0-9]{9,12}$/;
     if (formData.telepon && !phoneRegex.test(formData.telepon)) {
       setErrorMessage('Format nomor telepon tidak valid');
       return false;
     }
 
-    // If changing password, validate password fields
     if (formData.newPassword) {
       if (formData.newPassword.length < 6) {
         setErrorMessage('Password baru minimal 6 karakter');
@@ -358,10 +352,7 @@ const ProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     setErrorMessage('');
@@ -371,47 +362,41 @@ const ProfilePage = () => {
       const updateData = {
         nama_lengkap: formData.nama_lengkap,
         email: formData.email,
-        telepon: formData.telepon
+        telepon: formData.telepon,
+        ...(formData.newPassword ? { password: formData.newPassword } : {})
       };
 
-      // Add password to update data if user wants to change it
-      if (formData.newPassword) {
-        updateData.password = formData.newPassword;
-      }
-
-      const response = await axios.put(
-        `/api/pengguna/${user.id_pengguna}`, 
+      await axios.put(
+        'http://localhost:5000/api/pengguna/me',
         updateData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update user context with new data
+      // sinkronkan user di FE
       const updatedUser = {
         ...user,
         nama_lengkap: formData.nama_lengkap,
         email: formData.email,
         telepon: formData.telepon
       };
-      login(updatedUser, localStorage.getItem('token'));
+
+      if (typeof setUser === 'function') {
+        setUser(updatedUser);
+      } else {
+        // fallback kalau AuthContext belum menyediakan setUser
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // opsi: window.location.reload();
+      }
 
       setSuccessMessage('Profile berhasil diperbarui!');
       setIsEditing(false);
-      
-      // Clear password fields
       setFormData(prev => ({
         ...prev,
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       }));
-
-      // Auto-hide success message after 3 seconds
       setTimeout(() => setSuccessMessage(''), 3000);
-
     } catch (error) {
       console.error('Error updating profile:', error);
       setErrorMessage(
@@ -423,11 +408,10 @@ const ProfilePage = () => {
   };
 
   const handleCancel = () => {
-    // Reset form to original user data
     setFormData({
-      nama_lengkap: user.nama_lengkap || '',
-      email: user.email || '',
-      telepon: user.telepon || '',
+      nama_lengkap: user?.nama_lengkap || '',
+      email: user?.email || '',
+      telepon: user?.telepon || '',
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -447,7 +431,6 @@ const ProfilePage = () => {
       <Header />
       
       <main style={styles.main} className="main-padding">
-        {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Profile Saya</h1>
           <p style={styles.subtitle}>
@@ -455,7 +438,6 @@ const ProfilePage = () => {
           </p>
         </div>
 
-        {/* Success/Error Messages */}
         {successMessage && (
           <div style={{ ...styles.alert, ...styles.alertSuccess }}>
             <CheckCircle size={20} />
@@ -470,9 +452,7 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Profile Card */}
         <div style={styles.profileCard} className="profile-card">
-          {/* Avatar Section */}
           <div style={styles.avatarSection}>
             <div style={styles.avatarContainer}>
               <div style={styles.avatar}>
@@ -485,15 +465,15 @@ const ProfilePage = () => {
                 }}
                 onMouseEnter={() => setAvatarHover(true)}
                 onMouseLeave={() => setAvatarHover(false)}
+                title="Ubah foto (coming soon)"
               >
                 <Camera size={16} />
               </div>
             </div>
             <div style={styles.userName}>{formData.nama_lengkap || 'Nama Pengguna'}</div>
-            <div style={styles.userRole}>Pelanggan</div>
+            <div style={styles.userRole}>{(user?.peran || 'pelanggan').toUpperCase()}</div>
           </div>
 
-          {/* Form Section */}
           <div style={styles.sectionTitle}>
             Informasi Pribadi
             <button
@@ -520,7 +500,6 @@ const ProfilePage = () => {
 
           <form onSubmit={handleSubmit}>
             <div style={styles.formGrid}>
-              {/* Nama Lengkap */}
               <div style={styles.inputGroup}>
                 <label style={styles.label}>
                   <User size={16} />
@@ -546,7 +525,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Email */}
               <div style={styles.inputGroup}>
                 <label style={styles.label}>
                   <Mail size={16} />
@@ -572,7 +550,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Telepon */}
               <div style={styles.inputGroup}>
                 <label style={styles.label}>
                   <Phone size={16} />
@@ -601,7 +578,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Password Section - Only shown when editing */}
               {isEditing && (
                 <>
                   <div style={{ 
@@ -619,7 +595,6 @@ const ProfilePage = () => {
                     </div>
                   </div>
 
-                  {/* New Password */}
                   <div style={styles.inputGroup}>
                     <label style={styles.label}>
                       <Lock size={16} />
@@ -643,13 +618,13 @@ const ProfilePage = () => {
                       <div
                         style={styles.togglePassword}
                         onClick={() => setShowNewPassword(!showNewPassword)}
+                        title="Lihat/Sembunyikan password"
                       >
                         {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </div>
                     </div>
                   </div>
 
-                  {/* Confirm Password */}
                   <div style={styles.inputGroup}>
                     <label style={styles.label}>
                       <Lock size={16} />
@@ -673,6 +648,7 @@ const ProfilePage = () => {
                       <div
                         style={styles.togglePassword}
                         onClick={() => setShowPassword(!showPassword)}
+                        title="Lihat/Sembunyikan password"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </div>
@@ -682,7 +658,6 @@ const ProfilePage = () => {
               )}
             </div>
 
-            {/* Action Buttons - Only shown when editing */}
             {isEditing && (
               <div style={styles.buttonGroup} className="button-group">
                 <button

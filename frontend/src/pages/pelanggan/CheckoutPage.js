@@ -424,7 +424,7 @@ const CheckoutPage = ({ onSuccess }) => {
           id_menu: it.id_menu,
           jumlah: it.qty,
           harga: it.harga,
-          catatan: it.notes || null
+          catatan: it.notes || it.note || null
         })),
         catatan: note
       });
@@ -685,23 +685,7 @@ const CheckoutPage = ({ onSuccess }) => {
               </div>
             )}
 
-            {/* Notes */}
-            <div style={styles.formGroup}>
-              <label style={styles.label}>
-                Catatan Tambahan <span style={{ color: '#64748b', fontWeight: 'normal' }}>(Opsional)</span>
-              </label>
-              <textarea
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                placeholder="Contoh: Kurangi gula, tambah es, tanpa bawang, pakai susu almond, dll."
-                style={{
-                  ...styles.textarea,
-                  ...(focusState.note ? styles.textareaFocus : {})
-                }}
-                onFocus={() => setFocusState(prev => ({ ...prev, note: true }))}
-                onBlur={() => setFocusState(prev => ({ ...prev, note: false }))}
-              />
-            </div>
+          
 
             {/* Security Notice */}
             <div style={{

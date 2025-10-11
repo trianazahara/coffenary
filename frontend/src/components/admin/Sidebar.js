@@ -13,9 +13,12 @@ import {
     User,
     MapPin
 } from 'lucide-react';
+import { NotificationContext } from '../../context/NotificationContext';
+
 
 const Sidebar = () => {
     const { user, selectedBranch, logout } = useContext(AuthContext);
+    const { pendingOrdersCount, hasNewOrder } = useContext(NotificationContext);
     const navigate = useNavigate();
     const [hoveredItem, setHoveredItem] = useState(null);
 
@@ -277,6 +280,30 @@ document.head.appendChild(sidebarStyle);
             backgroundColor: 'rgba(239, 68, 68, 0.2)',
             borderColor: 'rgba(239, 68, 68, 0.5)',
             color: '#fee2e2'
+        },
+      badge: {
+            position: 'absolute',
+            right: '1rem',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            fontSize: '0.7rem',
+            fontWeight: '700',
+            padding: '0.2rem 0.5rem',
+            borderRadius: '9999px',
+            minWidth: '22px',
+            textAlign: 'center',
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
+        },
+        pulseDot: {
+            position: 'absolute',
+            right: '0.75rem',
+            top: '0.5rem',
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#fef2f2',
+            borderRadius: '50%',
+            animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'
         }
     };
 
@@ -340,7 +367,7 @@ document.head.appendChild(sidebarStyle);
 
             {/* Navigation */}
             <nav style={styles.nav}>
-                <div style={styles.navSection}>
+<div style={styles.navSection}>
                     <div style={styles.navSectionTitle}>Menu Utama</div>
                     {menuItems.map((item) => (
                         <NavLink 
@@ -363,6 +390,23 @@ document.head.appendChild(sidebarStyle);
                                     <div style={styles.linkContent}>
                                         <item.icon size={20} />
                                         {item.label}
+                                        
+                                        {/* Badge untuk Pemesanan */}
+                                        {item.path === '/admin/pemesanan' && pendingOrdersCount > 0 && (
+                                            <span style={{
+                                                marginLeft: 'auto',
+                                                backgroundColor: '#ef4444',
+                                                color: 'white',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '600',
+                                                padding: '0.125rem 0.5rem',
+                                                borderRadius: '1rem',
+                                                minWidth: '1.25rem',
+                                                textAlign: 'center'
+                                            }}>
+                                                {pendingOrdersCount}
+                                            </span>
+                                        )}
                                     </div>
                                     <ChevronRight 
                                         size={16} 
@@ -441,6 +485,25 @@ document.head.appendChild(sidebarStyle);
                     Logout
                 </button>
             </div>
+
+            {/* Animations */}
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.7;
+                    }
+                }
+                
+                @keyframes ping {
+                    75%, 100% {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
+                }
+            `}</style>
         </aside>
     );
 };

@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+// Import Context Providers
+import { NotificationProvider } from './context/NotificationContext';
+
 // Import Pages
-// import HomePage from './pages/HomePage'; (dan halaman pelanggan lainnya)
 import AdminPrivateRoute from './components/AdminPrivateRoute';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminLayout from './components/admin/AdminLayout';
@@ -26,16 +28,18 @@ import OrderHistoryPage from "./pages/pelanggan/OrderHistoryPage";
 import CheckoutPage from "./pages/pelanggan/CheckoutPage";
 import OrderDetailPage from "./pages/pelanggan/OrderDetailPage";
 import ForgotPasswordPage from './pages/admin/ForgotPasswordPage'; 
-
+import RegisterPage from './pages/RegisterPage';
 
 function App() {
   return (
     <Router>
+    <NotificationProvider>
       <Routes>
         {/* Halaman Login Admin (Publik) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/" element={<UserLoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* Route untuk lupa password admin */}
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} /> {/* Route untuk lupa password admin */}
 
         {/* Halaman Pilih Cabang (Dilindungi) */}
         <Route path="/pilih-cabang" element={<AdminPrivateRoute><PilihCabangPage /></AdminPrivateRoute>} />
@@ -67,10 +71,36 @@ function App() {
         <Route path="/pelanggan/status-pesanan/:id_pesanan" element={<OrderDetailPage />} />
 
 
+          {/* Halaman Pilih Cabang (Dilindungi) */}
+          <Route path="/pilih-cabang" element={<AdminPrivateRoute><PilihCabangPage /></AdminPrivateRoute>} />
 
+          {/* Halaman Utama Admin dengan Layout (Dilindungi) */}
+          <Route path="/admin" element={<AdminPrivateRoute><AdminLayout /></AdminPrivateRoute>}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="menu" element={<AdminMenu />} />
+            <Route path="pemesanan" element={<AdminPemesanan />} />
+            <Route path="pengguna" element={<AdminPengguna />} /> 
+            <Route path="log" element={<AdminLog />} />       
+            <Route path="log-aktivitas" element={<AdminLogAktivitas />} />
+          </Route>
 
-        {/* <Route path="/" element={<HomePage />} /> */}
-      </Routes>
+          {/* Rute untuk pelanggan */}
+          <Route path="/pelanggan/dashboard" element={<DashboardPelanggan />} />
+          <Route path="/pelanggan/menu" element={<MenuListPage />} />
+          <Route path="/pelanggan/cart" element={<CartPage />} />
+          <Route path="/pelanggan/invoices" element={<InvoicePage />} />
+          <Route path="/pelanggan/payment" element={<PaymentPage />} />
+          <Route path="/pelanggan/table" element={<TableSelectionPage />} />
+          <Route path="/pelanggan/receipt" element={<ReceiptPage />} />
+          <Route path="/pelanggan/profile" element={<ProfilePage />} />
+          <Route path="/pelanggan/history" element={<OrderHistoryPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/pelanggan/payment/:id_pesanan" element={<PaymentPage />} />
+          <Route path="/pelanggan/status-pesanan/:id_pesanan" element={<OrderDetailPage />} />
+        </Routes>
+      </NotificationProvider>
     </Router>
   );
 }

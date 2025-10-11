@@ -510,7 +510,7 @@ const UserLoginPage = () => {
 
         <div style={styles.forgotLinkContainer}>
                     <Link 
-                        to="/forgot-password" 
+                        to="/admin/forgot-password" 
                         style={styles.link}
                         onMouseEnter={(e) => e.currentTarget.style.color = styles.linkHover.color}
                         onMouseLeave={(e) => e.currentTarget.style.color = styles.link.color}

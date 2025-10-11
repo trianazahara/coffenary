@@ -1,5 +1,29 @@
 [
   {
+    "id": 8,
+    "aktivitas": "Mengupdate menu ID 12 di cabang 1",
+    "admin": "Unknown Admin",
+    "waktu": "12 Oktober 2025 pukul 00.04"
+  },
+  {
+    "id": 7,
+    "aktivitas": "Menghapus menu ID 13 di cabang 1",
+    "admin": "Unknown Admin",
+    "waktu": "12 Oktober 2025 pukul 00.03"
+  },
+  {
+    "id": 6,
+    "aktivitas": "Menghapus menu ID 14 di cabang 1",
+    "admin": "Unknown Admin",
+    "waktu": "11 Oktober 2025 pukul 23.25"
+  },
+  {
+    "id": 5,
+    "aktivitas": "Menambahkan pengguna 'dina' sebagai staff",
+    "admin": "Unknown Admin",
+    "waktu": "11 Oktober 2025 pukul 23.15"
+  },
+  {
     "id": 4,
     "aktivitas": "Menambahkan pengguna 'sdsss' sebagai staff",
     "admin": "Admin Utama",

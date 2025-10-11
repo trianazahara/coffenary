@@ -27,7 +27,7 @@ import CheckoutPage from "./pages/pelanggan/CheckoutPage";
 import OrderDetailPage from "./pages/pelanggan/OrderDetailPage";
 import ForgotPasswordPage from './pages/admin/ForgotPasswordPage'; 
 import AdminProfilePage from './pages/admin/AdminProfilePage';
-
+import AdminDaftarPelanggan from "./pages/admin/AdminDaftarPelanggan";
 
 function App() {
   return (
@@ -51,6 +51,7 @@ function App() {
           <Route path="log" element={<AdminLog />} />       
           <Route path="log-aktivitas" element={<AdminLogAktivitas />} /> {/* ✅ Tambahan */}
           <Route path="profile" element={<AdminProfilePage />} />
+          <Route path="pelanggan" element={<AdminDaftarPelanggan />} />
         </Route>
 
         {/* Tambahkan rute untuk pelanggan di sini */}

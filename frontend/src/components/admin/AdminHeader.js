@@ -7,7 +7,7 @@ const styles = {
   header: {
     position: 'fixed',
     top: 0,
-    left: '250px', // ⬅️ Tambahkan agar tidak menimpa sidebar
+    left: '280px', // ⬅️ tambahkan sedikit jarak biar gak nempel sidebar
     right: 0,
     zIndex: 50,
     background: 'linear-gradient(90deg, #ffffff 0%, #f0fdf4 100%)',
@@ -15,16 +15,20 @@ const styles = {
     borderBottom: '1px solid rgba(0,0,0,0.05)',
     boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
     height: '70px',
-    transition: 'left 0.3s ease',
   },
   container: {
-    maxWidth: '1150px',
+    maxWidth: '1300px',
     margin: '0 auto',
     padding: '0 2rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     height: '100%',
+  },
+  leftSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
   },
   logo: {
     display: 'flex',
@@ -39,6 +43,11 @@ const styles = {
     width: '2rem',
     height: '2rem',
     color: '#059669',
+  },
+  panelText: {
+    fontSize: '1.2rem',
+    color: '#065f46',
+    fontWeight: '600',
   },
   profileDropdown: { position: 'relative' },
   profileButton: {
@@ -112,11 +121,15 @@ const AdminHeader = () => {
   return (
     <header style={styles.header}>
       <div style={styles.container}>
-        <Link to="/admin/dashboard" style={styles.logo}>
-          <Coffee style={styles.logoIcon} />
-          <span>Panel Admin</span>
-        </Link>
+        {/* Bagian kiri: logo dan teks */}
+        <div style={styles.leftSection}>
+          <Link to="/admin/dashboard" style={styles.logo}>
+            <Coffee style={styles.logoIcon} />
+          </Link>
+          <span style={styles.panelText}>Admin Panel</span>
+        </div>
 
+        {/* Bagian kanan: profil */}
         <div style={styles.profileDropdown}>
           <button
             style={{
@@ -136,24 +149,12 @@ const AdminHeader = () => {
               <button
                 style={styles.dropdownItem}
                 onClick={handleProfileClick}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = '#ecfdf5')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = 'transparent')
-                }
               >
                 Profil Saya
               </button>
               <button
                 style={styles.dropdownItem}
                 onClick={handleLogout}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = '#ecfdf5')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = 'transparent')
-                }
               >
                 <LogOut size={16} style={{ marginRight: '0.5rem' }} />
                 Logout

@@ -1,7 +1,16 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { LayoutDashboard, Coffee, ClipboardList, LogOut, Building, Users, History } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Coffee,
+  ClipboardList,
+  LogOut,
+  Building,
+  Users,
+  History,
+  UserCheck
+} from 'lucide-react';
 
 const Sidebar = () => {
   const { user, selectedBranch, logout } = useContext(AuthContext);
@@ -113,6 +122,7 @@ const Sidebar = () => {
           <LayoutDashboard size={20} style={{ marginRight: '0.75rem' }} />
           Dashboard
         </NavLink>
+
         <NavLink
           to="/admin/menu"
           style={({ isActive }) => ({
@@ -123,6 +133,7 @@ const Sidebar = () => {
           <Coffee size={20} style={{ marginRight: '0.75rem' }} />
           Menu
         </NavLink>
+
         <NavLink
           to="/admin/pemesanan"
           style={({ isActive }) => ({
@@ -146,6 +157,7 @@ const Sidebar = () => {
               <Users size={20} style={{ marginRight: '0.75rem' }} />
               Pengguna
             </NavLink>
+
             <NavLink
               to="/admin/log-aktivitas"
               style={({ isActive }) => ({
@@ -156,13 +168,22 @@ const Sidebar = () => {
               <History size={20} style={{ marginRight: '0.75rem' }} />
               Log Aktivitas
             </NavLink>
+
+            <NavLink
+              to="/admin/pelanggan"
+              style={({ isActive }) => ({
+                ...styles.link,
+                ...(isActive && styles.activeLink),
+              })}
+            >
+              <UserCheck size={20} style={{ marginRight: '0.75rem' }} />
+              Daftar Pelanggan
+            </NavLink>
           </>
         )}
       </nav>
 
       <div style={styles.userInfo}>
-        <p style={{ color: 'white', fontWeight: 'bold' }}>{user?.nama_lengkap}</p>
-        <p style={{ color: '#d1fae5', fontSize: '0.875rem' }}>{user?.peran}</p>
         <button
           onClick={logout}
           style={{ ...styles.link, background: 'transparent', color: '#f0fdf4' }}

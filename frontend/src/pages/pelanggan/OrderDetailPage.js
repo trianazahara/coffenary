@@ -1,367 +1,318 @@
-// src/pages/pelanggan/OrderDetailPage.js
-import React, { useEffect, useState, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import Header from "../../components/pelanggan/Header";
-import { AuthContext } from "../../context/AuthContext";
+import React, { useEffect, useState, useContext, useMemo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
+import Header from '../../components/pelanggan/Header';
 import {
-  ArrowLeft, ShoppingBag, CreditCard, CheckCircle, AlertCircle,
-  Clock, Wallet, RefreshCw, ExternalLink, Shield, Receipt
-} from "lucide-react";
+  ArrowLeft, Calendar, MapPin, CreditCard, Package, ChefHat,
+  Clock, CheckCircle, XCircle, RefreshCw, Receipt, Loader2
+} from 'lucide-react';
 
 const styles = {
-  container: { minHeight: "100vh", backgroundColor: "#f8fafc", paddingTop: "70px" },
-  main: { maxWidth: "1000px", margin: "0 auto", padding: "2rem 1rem" },
-  header: { marginBottom: "1.5rem" },
-  title: {
-    fontSize: "1.75rem", fontWeight: 700, color: "#1e293b",
-    display: "flex", alignItems: "center", gap: "0.6rem"
-  },
-  subtitle: { color: "#64748b" },
-
+  container: { minHeight: '100vh', backgroundColor: '#f8fafc', paddingTop: 70 },
+  main: { maxWidth: 900, margin: '0 auto', padding: '2rem 1rem' },
   card: {
-    background: "#fff", borderRadius: "1rem", padding: "1.5rem",
-    border: "1px solid rgba(226,232,240,.6)", boxShadow: "0 4px 15px rgba(0,0,0,.06)"
+    background: '#fff', borderRadius: '1rem', padding: '1.5rem',
+    boxShadow: '0 4px 15px rgba(0,0,0,.08)', border: '1px solid rgba(226,232,240,.5)'
   },
-  grid: { display: "grid", gridTemplateColumns: "1fr 360px", gap: "1.25rem", alignItems: "start" },
-
-  sectionTitle: { fontSize: "1.1rem", fontWeight: 700, color: "#1f2937", marginBottom: ".75rem", display: "flex", gap: ".5rem", alignItems: "center" },
-
-  row: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: ".6rem 0", borderBottom: "1px solid #f1f5f9" },
-  label: { color: "#64748b" },
-  value: { color: "#111827", fontWeight: 600 },
-
-  tag: { display: "inline-flex", alignItems: "center", gap: ".4rem", padding: ".35rem .65rem", borderRadius: "999px", fontSize: ".8rem", fontWeight: 700 },
-
-  list: { marginTop: ".5rem", borderTop: "1px dashed #e5e7eb" },
-  item: { display: "flex", justifyContent: "space-between", gap: "1rem", padding: ".75rem 0", borderBottom: "1px dashed #e5e7eb" },
-  itemName: { color: "#374151", fontWeight: 600 },
-  itemMeta: { color: "#6b7280", fontSize: ".9rem" },
-  itemPrice: { color: "#059669", fontWeight: 700 },
-
-  sideCard: { position: "sticky", top: "2rem" },
-
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' },
+  title: { fontSize: '1.6rem', fontWeight: 700, color: '#0f172a' },
+  muted: { color: '#64748b' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '1rem' },
+  badge: {
+    display: 'inline-flex', alignItems: 'center', gap: 8, padding: '.4rem .8rem',
+    borderRadius: 999, fontWeight: 600, fontSize: '.8rem'
+  },
+  sectionTitle: { fontWeight: 700, margin: '1rem 0 .5rem', color: '#0f172a' },
+  list: { background: '#f8fafc', borderRadius: '.75rem', padding: '1rem' },
+  row: { display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid #e2e8f0' },
+  rowLast: { borderBottom: 'none' },
+  total: { display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem', marginTop: '.5rem' },
+  actions: { display: 'flex', gap: '.75rem', flexWrap: 'wrap', marginTop: '1rem' },
   btn: {
-    width: "100%", border: "none", borderRadius: ".75rem", padding: ".9rem 1rem",
-    display: "flex", alignItems: "center", justifyContent: "center", gap: ".5rem",
-    fontWeight: 700, cursor: "pointer", transition: "all .2s ease"
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '.6rem 1rem', borderRadius: '.6rem', border: '1px solid #e2e8f0',
+    background: '#fff', color: '#334155', cursor: 'pointer'
   },
-  btnPrimary: { background: "#10b981", color: "#fff" },
-  btnPrimaryHover: { background: "#059669", transform: "translateY(-1px)", boxShadow: "0 8px 30px rgba(16,185,129,.3)" },
-  btnOutline: { background: "#fff", color: "#10b981", border: "2px solid #10b981" },
-  btnOutlineHover: { background: "#ecfdf5" },
-
-  backBtn: {
-    background: "transparent", color: "#64748b", border: "1px solid #d1d5db",
-    padding: ".6rem .9rem", borderRadius: ".75rem", display: "inline-flex", gap: ".5rem", alignItems: "center", marginBottom: "1rem"
-  },
-
-  alert: {
-    display: "flex", gap: ".6rem", alignItems: "center", padding: ".75rem 1rem",
-    borderRadius: ".75rem", marginBottom: ".75rem", fontSize: ".95rem"
-  },
-  alertSuccess: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534" },
-  alertError: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" },
-
-  muted: { color: "#6b7280", fontSize: ".85rem" }
+  btnPrimary: { background: '#10b981', color: '#fff', borderColor: '#10b981' },
+  center: { textAlign: 'center', color: '#64748b', padding: '3rem .5rem' }
 };
 
-const statusStyle = (s) => {
-  const base = { ...styles.tag };
-  if (s === "terkonfirmasi" || s === "settlement" || s === "capture")
-    return { ...base, background: "#ecfdf5", color: "#065f46", border: "1px solid #a7f3d0" };
-  if (s === "pending")
-    return { ...base, background: "#fefce8", color: "#854d0e", border: "1px solid #fde68a" };
-  if (["cancel", "deny", "expire", "failure", "dibatalkan"].includes(s))
-    return { ...base, background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" };
-  return { ...base, background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe" };
-};
+// inject Snap JS (sandbox). Ganti ke production bila sudah live.
+const ensureSnapScript = (clientKey) =>
+  new Promise((resolve) => {
+    if (window.snap) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    s.setAttribute('data-client-key', clientKey || '');
+    s.onload = resolve;
+    document.body.appendChild(s);
+  });
 
-const formatIDR = (n) =>
-  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(Number(n || 0));
+const fmtIDR = (v) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+    .format(Number(v || 0));
+
+const fmtDate = (d) => d ? new Date(d).toLocaleString('id-ID', {
+  day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+}) : '-';
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    pending: { bg: 'rgba(251,191,36,.12)', color: '#b45309', icon: <Clock size={14}/> , label: 'Menunggu' },
+    terkonfirmasi: { bg: 'rgba(59,130,246,.12)', color: '#1d4ed8', icon: <Clock size={14}/>, label: 'Dikonfirmasi' },
+    dalam_persiapan: { bg: 'rgba(168,85,247,.12)', color: '#7c3aed', icon: <ChefHat size={14}/>, label: 'Diproses' },
+    siap: { bg: 'rgba(16,185,129,.12)', color: '#059669', icon: <Package size={14}/>, label: 'Siap' },
+    selesai: { bg: 'rgba(34,197,94,.12)', color: '#16a34a', icon: <CheckCircle size={14}/>, label: 'Selesai' },
+    dibatalkan: { bg: 'rgba(239,68,68,.12)', color: '#dc2626', icon: <XCircle size={14}/>, label: 'Dibatalkan' }
+  };
+  const cfg = map[status] || map.pending;
+  return (
+    <span style={{...styles.badge, background: cfg.bg, color: cfg.color}}>
+      {cfg.icon}{cfg.label}
+    </span>
+  );
+};
 
 export default function OrderDetailPage() {
-  const { id } = useParams(); // id_pesanan
+  const { id_pesanan } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
 
   const [loading, setLoading] = useState(true);
-  const [hover, setHover] = useState({});
-  const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
+  const [payLoading, setPayLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [err, setErr] = useState('');
+  const [order, setOrder] = useState(null);       // detail pesanan
+  const [payment, setPayment] = useState(null);   // pembayaran terakhir
 
-  const [pesanan, setPesanan] = useState(null);      // { id_pesanan, nomor_pesanan, status, total_harga, ... }
-  const [items, setItems] = useState([]);            // [{ id_menu, nama_menu, jumlah, harga }]
-  const [payment, setPayment] = useState(null);      // row dari tabel pembayaran
+  const canPay = useMemo(() => {
+    if (!order) return false;
+    // boleh bayar jika pesanan belum selesai/dibatalkan dan pembayaran belum settlement/sukses
+    const st = (payment?.status_pembayaran || '').toLowerCase();
+    const unpaid = !st || ['pending','expire','gagal','cstore','snap'].includes(st);
+    return ['selesai','dibatalkan'].includes(order.status) ? false : unpaid;
+  }, [order, payment]);
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        setError("");
+        setErr('');
 
-        // Ambil detail pesanan + item
-        // NOTE: pastikan endpoint ini tersedia di backend-mu (lihat catatan di bawah)
-        const detailRes = await axios.get(`http://localhost:5000/api/pesanan/${id}`);
-        setPesanan(detailRes.data.pesanan);
-        setItems(detailRes.data.items || []);
+        // Ambil detail pesanan untuk PELANGGAN (backend: pastikan hanya boleh melihat pesanan miliknya)
+        const { data } = await axios.get(
+          `http://localhost:5000/api/pesanan/detail-pelanggan/${id_pesanan}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-        // Ambil pembayaran terakhir
-        try {
-          const payRes = await axios.get(`http://localhost:5000/api/pembayaran/by-pesanan/${id}`, { withCredentials: true });
-          setPayment(payRes.data);
-        } catch (e) {
-          // 404 -> belum ada pembayaran
-          setPayment(null);
-        }
+        setOrder(data?.pesanan || data || null);
+        setPayment(data?.pembayaran_terakhir || data?.pembayaran || null);
       } catch (e) {
         console.error(e);
-        setError(e.response?.data?.message || "Gagal memuat detail pesanan");
+        setErr(e.response?.data?.message || 'Gagal memuat detail pesanan');
       } finally {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id_pesanan, token]);
 
-  const openUrl = (url) => {
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleContinuePayment = () => {
-    if (payment?.snap_redirect_url) {
-      openUrl(payment.snap_redirect_url);
-    } else {
-      setError("Link pembayaran tidak tersedia.");
+  const openPaymentUI = async (payInfo) => {
+    // QRIS redirect lebih simpel → buka link
+    if (payInfo?.snap_redirect_url) {
+      window.open(payInfo.snap_redirect_url, '_blank');
+      return;
+    }
+    // Snap popup (non QR) → butuh snap.js
+    if (payInfo?.snap_token) {
+      await ensureSnapScript(process.env.REACT_APP_MIDTRANS_CLIENT_KEY || '');
+      if (window.snap) {
+        window.snap.pay(payInfo.snap_token, {
+          onSuccess: () => checkLatestStatus(true),
+          onPending: () => checkLatestStatus(true),
+          onClose: () => checkLatestStatus(false),
+          onError: () => checkLatestStatus(false),
+        });
+      }
     }
   };
 
-  const handleReinitiate = async () => {
+  const handlePayNow = async () => {
     try {
-      setError("");
-      setInfo("");
-      setHover((h) => ({ ...h, paying: true }));
+      setPayLoading(true);
+      setErr('');
 
-      const payload = {
-        id_pesanan: pesanan.id_pesanan,
-        total_harga: pesanan.total_harga,
-        customer: {
-          first_name: user?.nama_lengkap || "Pelanggan",
-          email: user?.email || ""
-        },
-        items: items.map((it) => ({
-          id_menu: it.id_menu,
-          jumlah: it.jumlah,
-          harga: it.harga,
-          nama: it.nama_menu
-        }))
-      };
+      // kalau pembayaran terakhir masih "pending" dan ada token/url → reuse
+      if (payment && ['pending'].includes((payment.status_pembayaran || '').toLowerCase())) {
+        await openPaymentUI(payment);
+        return;
+      }
 
-      const resp = await axios.post("http://localhost:5000/api/pembayaran/reinitiate", payload, { withCredentials: true });
-      setPayment({
-        ...payment,
-        referensi_pembayaran: resp.data.order_id,
-        snap_token: resp.data.snap?.token,
-        snap_redirect_url: resp.data.snap?.redirect_url,
-        status_pembayaran: "pending"
-      });
-      setInfo("Tautan pembayaran berhasil dibuat ulang.");
-      if (resp.data.snap?.redirect_url) openUrl(resp.data.snap.redirect_url);
+      // (Re)create payment
+      const { data } = await axios.post(
+        `http://localhost:5000/api/pesanan/${order.id}/pay/recreate`,
+        {}, { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // backend return { pembayaran: {...} }
+      setPayment(data?.pembayaran || data);
+
+      await openPaymentUI(data?.pembayaran || data);
     } catch (e) {
       console.error(e);
-      setError(e.response?.data?.message || "Gagal membuat tautan pembayaran.");
+      setErr(e.response?.data?.message || 'Gagal memulai pembayaran');
     } finally {
-      setHover((h) => ({ ...h, paying: false }));
+      setPayLoading(false);
     }
   };
 
-  const showContinue =
-    payment && payment.status_pembayaran === "pending" && payment.snap_redirect_url;
-
-  const showReinit =
-    !payment || ["expire", "cancel", "deny", "failure", "dibatalkan"].includes(payment.status_pembayaran);
+  const checkLatestStatus = async (silent = false) => {
+    try {
+      if (!silent) setChecking(true);
+      const { data } = await axios.get(
+        `http://localhost:5000/api/pesanan/pembayaran/${order.id}/latest`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPayment(data || null);
+    } catch (e) {
+      if (!silent) {
+        console.error(e);
+        setErr(e.response?.data?.message || 'Gagal mengambil status pembayaran');
+      }
+    } finally {
+      if (!silent) setChecking(false);
+    }
+  };
 
   if (loading) {
     return (
       <div style={styles.container}>
         <Header />
-        <main style={styles.main}>
-          <div style={{ ...styles.card, textAlign: "center", color: "#64748b" }}>
-            <Clock size={36} style={{ marginBottom: ".6rem", color: "#10b981" }} />
-            Memuat detail pesanan...
-          </div>
-        </main>
+        <div style={styles.center}><Loader2 className="spin" size={28}/> Memuat detail pesanan…</div>
       </div>
     );
   }
 
-  if (error) {
+  if (err) {
     return (
       <div style={styles.container}>
         <Header />
         <main style={styles.main}>
-          <button style={styles.backBtn} onClick={() => navigate(-1)}>
-            <ArrowLeft size={16} /> Kembali
-          </button>
-          <div style={{ ...styles.alert, ...styles.alertError }}>
-            <AlertCircle size={18} /> {error}
+          <div style={styles.card}>
+            <div style={{...styles.headerRow, marginBottom: 16}}>
+              <button style={styles.btn} onClick={() => navigate(-1)}><ArrowLeft size={16}/> Kembali</button>
+            </div>
+            <div style={styles.center}>
+              <XCircle size={46} color="#ef4444" style={{marginBottom: 12}} />
+              {err}
+            </div>
           </div>
         </main>
       </div>
     );
   }
 
-  if (!pesanan) return null;
-
-  const tax = Math.round(Number(pesanan.total_harga || 0) * 0.1);
-  const total = Number(pesanan.total_harga || 0) + tax;
+  if (!order) {
+    return (
+      <div style={styles.container}>
+        <Header />
+        <main style={styles.main}>
+          <div style={styles.card}>
+            <div style={styles.center}>
+              <Receipt size={46} style={{marginBottom: 12}} />
+              Pesanan tidak ditemukan.
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
       <Header />
       <main style={styles.main}>
-        <button style={styles.backBtn} onClick={() => navigate("/pelanggan/dashboard")}>
-          <ArrowLeft size={16} /> Kembali ke Dashboard
-        </button>
-
-        <div style={styles.header}>
-          <h1 style={styles.title}>
-            <Receipt size={26} /> Detail Pesanan
-          </h1>
-          <div style={{ display: "flex", gap: ".5rem", marginTop: ".35rem", alignItems: "center" }}>
-            <span style={{ ...statusStyle(pesanan.status) }}>
-              <ShoppingBag size={14} /> {pesanan.status}
-            </span>
-            {payment?.status_pembayaran && (
-              <span style={{ ...statusStyle(payment.status_pembayaran) }}>
-                <CreditCard size={14} /> {payment.status_pembayaran}
-              </span>
-            )}
+        <div style={styles.card}>
+          {/* Header */}
+          <div style={styles.headerRow}>
+            <div>
+              <div style={styles.title}>Detail Pesanan #{order.nomor_pesanan}</div>
+              <div style={styles.muted}>ID Pesanan: {order.id}</div>
+            </div>
+            <StatusBadge status={order.status} />
           </div>
-          <div style={{ ...styles.muted, marginTop: ".35rem" }}>
-            Nomor Pesanan: <b>{pesanan.nomor_pesanan}</b>
+
+          {/* meta */}
+          <div style={styles.grid}>
+            <div className="meta">
+              <div style={styles.muted}><Calendar size={14}/> Tanggal</div>
+              <div><strong>{fmtDate(order.tanggal_dibuat)}</strong></div>
+            </div>
+            <div className="meta">
+              <div style={styles.muted}><MapPin size={14}/> Cabang</div>
+              <div><strong>{order.cabang || '-'}</strong></div>
+            </div>
+            <div className="meta">
+              <div style={styles.muted}><CreditCard size={14}/> Metode</div>
+              <div><strong>{(payment?.metode_pembayaran || order.metode_pembayaran || '-').toString().toUpperCase()}</strong></div>
+            </div>
+            <div className="meta">
+              <div style={styles.muted}><Package size={14}/> Item</div>
+              <div><strong>{(order.items || []).length} item</strong></div>
+            </div>
+          </div>
+
+          {/* Items */}
+          <div style={styles.sectionTitle}>Menu Dipesan</div>
+          <div style={styles.list}>
+            {(order.items || []).map((it, idx) => (
+              <div key={idx} style={{...styles.row, ...(idx === (order.items.length - 1) ? styles.rowLast : {})}}>
+                <div>
+                  <div style={{fontWeight: 600, color: '#0f172a'}}>{it.nama_menu}</div>
+                  <div style={styles.muted}>{it.jumlah}x • {fmtIDR(it.harga_satuan)}</div>
+                </div>
+                <div style={{fontWeight: 700}}>{fmtIDR(Number(it.harga_satuan) * Number(it.jumlah))}</div>
+              </div>
+            ))}
+            <div style={styles.total}>
+              <div>Total</div>
+              <div>{fmtIDR(order.total_harga)}</div>
+            </div>
+          </div>
+
+          {/* Payment box */}
+          <div style={styles.sectionTitle}>Pembayaran Terakhir</div>
+          <div style={{...styles.list, background:'#fff', border:'1px dashed #e2e8f0'}}>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:12}}>
+              <div><span style={styles.muted}>Status</span><br/><strong>{(payment?.status_pembayaran || '-').toUpperCase()}</strong></div>
+              <div><span style={styles.muted}>Tipe</span><br/><strong>{(payment?.payment_type || payment?.metode_pembayaran || '-').toUpperCase()}</strong></div>
+              <div><span style={styles.muted}>Jumlah</span><br/><strong>{fmtIDR(payment?.jumlah_bayar || order.total_harga)}</strong></div>
+              <div><span style={styles.muted}>Waktu</span><br/><strong>{fmtDate(payment?.tanggal_pembayaran)}</strong></div>
+              <div><span style={styles.muted}>Ref</span><br/><strong>{payment?.referensi_pembayaran || '-'}</strong></div>
+            </div>
+
+            <div style={styles.actions}>
+              <button className="btn" style={styles.btn} onClick={() => navigate('/pelanggan/history')}>
+                <ArrowLeft size={16}/> Riwayat
+              </button>
+              <button className="btn" style={styles.btn} onClick={() => checkLatestStatus()}>
+                {checking ? <Loader2 size={16} className="spin"/> : <RefreshCw size={16}/>} Cek Status
+              </button>
+              {canPay && (
+                <button className="btn" style={{...styles.btn, ...styles.btnPrimary}} onClick={handlePayNow} disabled={payLoading}>
+                  {payLoading ? <Loader2 size={16} className="spin"/> : <CreditCard size={16}/>} Bayar Sekarang
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{marginTop:12, fontSize:12, color:'#94a3b8'}}>
+            * Jika Anda memilih QRIS, klik “Bayar Sekarang” akan membuka halaman QR di tab baru.
           </div>
         </div>
 
-        <div style={styles.grid}>
-          {/* Left */}
-          <div style={styles.card}>
-            <div style={styles.sectionTitle}><ShoppingBag size={20} /> Item Pesanan</div>
-            <div style={styles.list}>
-              {items.map((it) => (
-                <div key={it.id_menu} style={styles.item}>
-                  <div>
-                    <div style={styles.itemName}>{it.nama_menu}</div>
-                    <div style={styles.itemMeta}>
-                      {it.jumlah} × {formatIDR(it.harga)}
-                    </div>
-                  </div>
-                  <div style={styles.itemPrice}>
-                    {formatIDR(Number(it.harga) * Number(it.jumlah))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: "1rem" }}>
-              <div style={styles.row}>
-                <span style={styles.label}>Subtotal</span>
-                <span style={styles.value}>{formatIDR(pesanan.total_harga)}</span>
-              </div>
-              <div style={styles.row}>
-                <span style={styles.label}>PPN (10%)</span>
-                <span style={styles.value}>{formatIDR(tax)}</span>
-              </div>
-              <div style={{ ...styles.row, borderBottom: "none", paddingTop: ".9rem" }}>
-                <span style={{ ...styles.value, color: "#1f2937" }}>Total</span>
-                <span style={{ ...styles.value, color: "#059669", fontSize: "1.15rem" }}>
-                  {formatIDR(total)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right */}
-          <div style={{ ...styles.card, ...styles.sideCard }}>
-            <div style={styles.sectionTitle}><Wallet size={20} /> Pembayaran</div>
-
-            {info && (
-              <div style={{ ...styles.alert, ...styles.alertSuccess }}>
-                <CheckCircle size={18} /> {info}
-              </div>
-            )}
-
-            {!payment && (
-              <div style={{ ...styles.muted, marginBottom: ".75rem" }}>
-                Belum ada transaksi pembayaran untuk pesanan ini.
-              </div>
-            )}
-
-            {payment && (
-              <div style={{ marginBottom: ".75rem" }}>
-                <div style={styles.row}>
-                  <span style={styles.label}>Ref. Pembayaran</span>
-                  <span style={styles.value} title={payment.referensi_pembayaran}>
-                    {payment.referensi_pembayaran?.slice(0, 16)}…
-                  </span>
-                </div>
-                {payment.payment_type && (
-                  <div style={styles.row}>
-                    <span style={styles.label}>Metode</span>
-                    <span style={styles.value}>{payment.payment_type}</span>
-                  </div>
-                )}
-                {payment.transaction_id && (
-                  <div style={styles.row}>
-                    <span style={styles.label}>Transaksi</span>
-                    <span style={styles.value}>{payment.transaction_id}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Buttons */}
-            {showContinue && (
-              <button
-                style={{
-                  ...styles.btn,
-                  ...styles.btnPrimary,
-                  ...(hover.cont ? styles.btnPrimaryHover : {})
-                }}
-                onMouseEnter={() => setHover(h => ({ ...h, cont: true }))}
-                onMouseLeave={() => setHover(h => ({ ...h, cont: false }))}
-                onClick={handleContinuePayment}
-              >
-                <ExternalLink size={18} /> Lanjutkan Pembayaran
-              </button>
-            )}
-
-            {showReinit && (
-              <button
-                style={{
-                  ...styles.btn,
-                  ...styles.btnOutline,
-                  marginTop: showContinue ? ".6rem" : 0,
-                  ...(hover.pay ? styles.btnOutlineHover : {})
-                }}
-                onMouseEnter={() => setHover(h => ({ ...h, pay: true }))}
-                onMouseLeave={() => setHover(h => ({ ...h, pay: false }))}
-                onClick={handleReinitiate}
-                disabled={hover.paying}
-              >
-                <RefreshCw size={18} /> {hover.paying ? "Memproses..." : "Bayar Sekarang"}
-              </button>
-            )}
-
-            {!showContinue && !showReinit && (
-              <div style={{ ...styles.alert, ...styles.alertSuccess, marginTop: ".5rem" }}>
-                <Shield size={18} /> Pembayaran telah dikonfirmasi.
-              </div>
-            )}
-
-            <div style={{ ...styles.muted, marginTop: ".6rem", display: "flex", gap: ".35rem", alignItems: "center" }}>
-              <Shield size={14} /> Transaksi aman lewat Midtrans.
-            </div>
-          </div>
+        <div style={{textAlign:'center', marginTop:16}}>
+          <Link to="/pelanggan/order-history" style={{textDecoration:'none', color:'#10b981'}}>← Kembali ke Riwayat Pesanan</Link>
         </div>
       </main>
     </div>

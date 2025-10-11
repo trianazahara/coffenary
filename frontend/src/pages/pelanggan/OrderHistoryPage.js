@@ -446,7 +446,7 @@ const OrderHistoryPage = () => {
   };
 
   const handleViewDetail = (orderId) => {
-    navigate(`/pelanggan/pesanan/${orderId}`);
+    navigate(`/pelanggan/status-pesanan/${orderId}`);
   };
 
   const handleReorder = (order) => {

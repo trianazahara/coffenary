@@ -46,7 +46,7 @@ export const CartProvider = ({ children }) => {
   }, [cartItems, cartKey, ready]);
 
   // API
-  const addToCart = (menuItem, qty = 1) => {
+  const addToCart = (menuItem, qty = 1, notes = '') => {
     setCartItems(prev => {
       const found = prev.find(i => i.id_menu === menuItem.id_menu);
       if (found) {
@@ -54,7 +54,7 @@ export const CartProvider = ({ children }) => {
           i.id_menu === menuItem.id_menu ? { ...i, qty: i.qty + qty } : i
         );
       }
-      return [...prev, { ...menuItem, qty }];
+      return [...prev, { ...menuItem, qty, notes }];
     });
   };
 
@@ -63,6 +63,13 @@ export const CartProvider = ({ children }) => {
       prev
         .map(i => (i.id_menu === id_menu ? { ...i, qty: Math.max(0, qty) } : i))
         .filter(i => i.qty > 0)
+    );
+  };
+
+  // Tambahkan function untuk update notes
+  const updateItemNotes = (id_menu, notes) => {
+    setCartItems(prev =>
+      prev.map(i => (i.id_menu === id_menu ? { ...i, notes } : i))
     );
   };
 
@@ -76,8 +83,14 @@ export const CartProvider = ({ children }) => {
   const getTotalPrice = () => subtotal;
 
   const value = {
-    cartItems, addToCart, updateQty, removeFromCart, clearCart, subtotal, getTotalPrice,
-    // optional expose: cartKey
+    cartItems, 
+    addToCart, 
+    updateQty, 
+    updateItemNotes, // Export function baru
+    removeFromCart, 
+    clearCart, 
+    subtotal, 
+    getTotalPrice,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

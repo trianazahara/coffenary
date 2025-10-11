@@ -1,7 +1,7 @@
 // src/pages/pelanggan/CartPage.js
 import React, { useContext, useState } from "react";
 import { CartContext } from "../../context/CartContext";
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, Home, CreditCard, Shield, Truck } from "lucide-react";
+import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, CreditCard, Shield, Truck, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/pelanggan/Header";
 
@@ -104,7 +104,7 @@ const styles = {
   },
   cartItem: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: '1.5rem',
     borderBottom: '1px solid #f1f5f9',
     transition: 'all 0.2s ease'
@@ -144,7 +144,49 @@ const styles = {
   itemPrice: {
     fontSize: '1rem',
     fontWeight: '600',
-    color: '#059669'
+    color: '#059669',
+    marginBottom: '0.75rem'
+  },
+  notesContainer: {
+    marginTop: '0.75rem'
+  },
+  notesLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: '0.85rem',
+    color: '#64748b',
+    marginBottom: '0.5rem',
+    fontWeight: '500'
+  },
+  notesInput: {
+    width: '100%',
+    padding: '0.6rem 0.75rem',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5rem',
+    fontSize: '0.85rem',
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontFamily: 'inherit'
+  },
+  notesInputFocus: {
+    borderColor: '#10b981',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
+  },
+  notesDisplay: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '0.5rem',
+    padding: '0.6rem 0.75rem',
+    backgroundColor: '#f0fdf4',
+    border: '1px solid #bbf7d0',
+    borderRadius: '0.5rem',
+    fontSize: '0.85rem',
+    color: '#059669',
+    marginTop: '0.5rem'
   },
   quantityControl: {
     display: 'flex',
@@ -338,12 +380,19 @@ styleSheet.textContent = `
     .item-content { margin-right: 0; }
     .quantity-control { margin-right: 0; }
     .features { grid-template-columns: 1fr !important; }
-    .cart-actions { flex-direction: column; gap: 1rem; }
+    .cart-actions { 
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      justify-content: space-between;
+      margin-top: 1rem;
+    }
   }
   
   @media (max-width: 480px) {
     .cart-items { padding: 1rem !important; }
     .summary-card { padding: 1rem !important; }
+    .cart-actions { flex-direction: column; gap: 1rem; }
   }
 `;
 if (!document.querySelector('#cart-styles')) {
@@ -356,6 +405,7 @@ const CartPage = () => {
   const {
     cartItems,
     updateQty,
+    updateItemNotes,
     removeFromCart,
     clearCart,
     subtotal,
@@ -365,6 +415,7 @@ const CartPage = () => {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [hoveredRemove, setHoveredRemove] = useState(null);
   const [hoveredClear, setHoveredClear] = useState(false);
+  const [focusedNote, setFocusedNote] = useState(null);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('id-ID', {
@@ -376,6 +427,10 @@ const CartPage = () => {
 
   const getTotalItems = () => {
     return cartItems.reduce((total, item) => total + item.qty, 0);
+  };
+
+  const handleNoteChange = (itemId, note) => {
+    updateItemNotes(itemId, note);
   };
 
   if (cartItems.length === 0) {
@@ -478,51 +533,79 @@ const CartPage = () => {
                   <div style={styles.itemPrice}>
                     {formatPrice(item.harga)}
                   </div>
+
+                  {/* Notes Section */}
+                  <div style={styles.notesContainer}>
+                    <label style={styles.notesLabel}>
+                      <MessageSquare size={14} />
+                      Catatan khusus (opsional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: less sugar, extra hot, tanpa bawang..."
+                      value={item.notes || ''}
+                      onChange={(e) => handleNoteChange(item.id_menu, e.target.value)}
+                      onFocus={() => setFocusedNote(item.id_menu)}
+                      onBlur={() => setFocusedNote(null)}
+                      style={{
+                        ...styles.notesInput,
+                        ...(focusedNote === item.id_menu ? styles.notesInputFocus : {})
+                      }}
+                    />
+                    {item.notes && (
+                      <div style={styles.notesDisplay}>
+                        <MessageSquare size={14} style={{ flexShrink: 0 }} />
+                        <span>{item.notes}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div style={styles.quantityControl}>
+                <div className="cart-actions">
+                  <div style={styles.quantityControl}>
+                    <button
+                      style={{
+                        ...styles.quantityButton,
+                        ...(item.qty <= 1 ? styles.quantityButtonDisabled : {}),
+                        ...(hoveredButton === `decrease-${index}` ? styles.quantityButtonHover : {})
+                      }}
+                      onClick={() => updateQty(item.id_menu, item.qty - 1)}
+                      disabled={item.qty <= 1}
+                      onMouseEnter={() => setHoveredButton(`decrease-${index}`)}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span style={styles.quantity}>{item.qty}</span>
+                    <button
+                      style={{
+                        ...styles.quantityButton,
+                        ...(hoveredButton === `increase-${index}` ? styles.quantityButtonHover : {})
+                      }}
+                      onClick={() => updateQty(item.id_menu, item.qty + 1)}
+                      onMouseEnter={() => setHoveredButton(`increase-${index}`)}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+
+                  <div style={styles.itemTotal}>
+                    {formatPrice(item.harga * item.qty)}
+                  </div>
+
                   <button
                     style={{
-                      ...styles.quantityButton,
-                      ...(item.qty <= 1 ? styles.quantityButtonDisabled : {}),
-                      ...(hoveredButton === `decrease-${index}` ? styles.quantityButtonHover : {})
+                      ...styles.removeButton,
+                      ...(hoveredRemove === index ? styles.removeButtonHover : {})
                     }}
-                    onClick={() => updateQty(item.id_menu, item.qty - 1)}
-                    disabled={item.qty <= 1}
-                    onMouseEnter={() => setHoveredButton(`decrease-${index}`)}
-                    onMouseLeave={() => setHoveredButton(null)}
+                    onClick={() => removeFromCart(item.id_menu)}
+                    onMouseEnter={() => setHoveredRemove(index)}
+                    onMouseLeave={() => setHoveredRemove(null)}
                   >
-                    <Minus size={16} />
-                  </button>
-                  <span style={styles.quantity}>{item.qty}</span>
-                  <button
-                    style={{
-                      ...styles.quantityButton,
-                      ...(hoveredButton === `increase-${index}` ? styles.quantityButtonHover : {})
-                    }}
-                    onClick={() => updateQty(item.id_menu, item.qty + 1)}
-                    onMouseEnter={() => setHoveredButton(`increase-${index}`)}
-                    onMouseLeave={() => setHoveredButton(null)}
-                  >
-                    <Plus size={16} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
-
-                <div style={styles.itemTotal}>
-                  {formatPrice(item.harga * item.qty)}
-                </div>
-
-                <button
-                  style={{
-                    ...styles.removeButton,
-                    ...(hoveredRemove === index ? styles.removeButtonHover : {})
-                  }}
-                  onClick={() => removeFromCart(item.id_menu)}
-                  onMouseEnter={() => setHoveredRemove(index)}
-                  onMouseLeave={() => setHoveredRemove(null)}
-                >
-                  <Trash2 size={16} />
-                </button>
               </div>
             ))}
           </div>
@@ -565,7 +648,7 @@ const CartPage = () => {
             <div style={styles.summaryTotal}>
               <span style={styles.totalLabel}>Total Pembayaran</span>
               <span style={styles.totalValue}>
-                {formatPrice(subtotal + subtotal * 0.1)}
+                {formatPrice(subtotal + subtotal)}
               </span>
             </div>
 
@@ -579,7 +662,7 @@ const CartPage = () => {
               onMouseLeave={() => setHoveredButton(null)}
             >
               <CreditCard size={18} />
-              Lanjut ke Pembayaran
+              Checkout
               <ArrowRight size={16} />
             </button>
 

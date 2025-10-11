@@ -1,16 +1,18 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { NotificationContext } from '../../context/NotificationContext';
 import { LayoutDashboard, Coffee, ClipboardList, LogOut, Building, Users, History } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, selectedBranch, logout } = useContext(AuthContext);
+    const { pendingOrdersCount, hasNewOrder } = useContext(NotificationContext);
     const navigate = useNavigate();
 
     const styles = {
         sidebar: { 
             width: '250px', 
-            background: 'linear-gradient(180deg, #059669, #10b981)', // hijau gradasi
+            background: 'linear-gradient(180deg, #059669, #10b981)', 
             color: '#f0fdf4', 
             display: 'flex', 
             flexDirection: 'column', 
@@ -25,7 +27,12 @@ const Sidebar = () => {
             textAlign: 'center', 
             borderBottom: '1px solid rgba(255,255,255,0.2)' 
         },
-        logoText: { fontSize: '1.75rem', fontWeight: 'bold', color: 'white', letterSpacing: '1px' },
+        logoText: { 
+            fontSize: '1.75rem', 
+            fontWeight: 'bold', 
+            color: 'white', 
+            letterSpacing: '1px' 
+        },
         branchButton: { 
             marginTop: '1.5rem', 
             padding: '0.75rem', 
@@ -39,7 +46,10 @@ const Sidebar = () => {
             textAlign: 'left',
             transition: 'all 0.3s ease'
         },
-        nav: { flexGrow: 1, marginTop: '1.5rem' },
+        nav: { 
+            flexGrow: 1, 
+            marginTop: '1.5rem' 
+        },
         link: { 
             display: 'flex', 
             alignItems: 'center', 
@@ -48,9 +58,37 @@ const Sidebar = () => {
             color: '#ecfdf5', 
             borderRadius: '0.75rem', 
             margin: '0.5rem 0', 
-            transition: 'all 0.3s ease'
+            transition: 'all 0.3s ease',
+            position: 'relative'
         },
-        activeLink: { backgroundColor: 'rgba(255,255,255,0.25)', color: 'white' },
+        activeLink: { 
+            backgroundColor: 'rgba(255,255,255,0.25)', 
+            color: 'white' 
+        },
+        badge: {
+            position: 'absolute',
+            right: '1rem',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            fontSize: '0.7rem',
+            fontWeight: '700',
+            padding: '0.2rem 0.5rem',
+            borderRadius: '9999px',
+            minWidth: '22px',
+            textAlign: 'center',
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
+        },
+        pulseDot: {
+            position: 'absolute',
+            right: '0.75rem',
+            top: '0.5rem',
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#fef2f2',
+            borderRadius: '50%',
+            animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'
+        },
         userInfo: { 
             borderTop: '1px solid rgba(255,255,255,0.2)', 
             paddingTop: '1rem', 
@@ -92,25 +130,44 @@ const Sidebar = () => {
                     <LayoutDashboard size={20} style={{ marginRight: '0.75rem' }} />
                     Dashboard
                 </NavLink>
+                
                 <NavLink to="/admin/menu" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
                     <Coffee size={20} style={{ marginRight: '0.75rem' }} />
                     Menu
                 </NavLink>
-                <NavLink to="/admin/pemesanan" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
+                
+                <NavLink 
+                    to="/admin/pemesanan" 
+                    style={({ isActive }) => ({ 
+                        ...styles.link, 
+                        ...(isActive && styles.activeLink) 
+                    })}
+                >
                     <ClipboardList size={20} style={{ marginRight: '0.75rem' }} />
                     Pemesanan
+                    
+                    {/* Badge Notifikasi */}
+                    {pendingOrdersCount > 0 && (
+                        <>
+                            <span style={styles.badge}>
+                                {pendingOrdersCount}
+                            </span>
+                            {hasNewOrder && <span style={styles.pulseDot}></span>}
+                        </>
+                    )}
                 </NavLink>
+                
                 {user?.peran === 'admin' && (
                     <>
                         <NavLink to="/admin/pengguna" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
                             <Users size={20} style={{ marginRight: '0.75rem' }} />
                             Pengguna
                         </NavLink>
-                       <NavLink to="/admin/log-aktivitas" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
-    <History size={20} style={{ marginRight: '0.75rem' }} />
-    Log Aktivitas
-</NavLink>
-
+                        
+                        <NavLink to="/admin/log-aktivitas" style={({ isActive }) => ({ ...styles.link, ...(isActive && styles.activeLink) })}>
+                            <History size={20} style={{ marginRight: '0.75rem' }} />
+                            Log Aktivitas
+                        </NavLink>
                     </>
                 )}
             </nav>
@@ -123,6 +180,25 @@ const Sidebar = () => {
                     Logout
                 </button>
             </div>
+
+            {/* Animations */}
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.7;
+                    }
+                }
+                
+                @keyframes ping {
+                    75%, 100% {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
+                }
+            `}</style>
         </aside>
     );
 };

@@ -8,55 +8,77 @@ async function notificationHandler(req, res) {
   try {
     const body = req.body;
 
-    // ambil field yang biasa datang dari Midtrans
-    const order_id = body.order_id || body.orderId || body.order_id;
-    const status_code = body.status_code || body.statusCode || String(body.status_code || '');
-    const gross_amount = String(body.gross_amount || body.grossAmount || '');
+    // Ambil nilai kunci
+    const order_id = body.order_id || body.orderId;
+    const status_code = String(body.status_code ?? '');
+    const gross_amount = String(body.gross_amount ?? body.grossAmount ?? '');
     const signature_key = body.signature_key || body.signatureKey;
 
-    // validasi signature_key (sha512(order_id + status_code + gross_amount + serverKey))
-    const expected = crypto.createHash('sha512').update(`${order_id}${status_code}${gross_amount}${serverKey}`).digest('hex');
+    // Verifikasi signature (wajib untuk production & sandbox)
+    const expected = crypto
+      .createHash('sha512')
+      .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
+      .digest('hex');
+
     if (signature_key && signature_key !== expected) {
-      console.warn('Invalid signature_key', signature_key, expected);
+      console.warn('Invalid signature_key');
       return res.status(403).json({ message: 'Invalid signature' });
     }
-    // jika ingin sementara melewati signature check selama development, tidak disarankan di production
 
-    const transactionStatus = body.transaction_status || body.transactionStatus || body.transaction_status;
-    const transactionTime = body.transaction_time || body.transactionTime || null;
+    // Mapping field penting
+    const transactionStatus = body.transaction_status || body.transactionStatus || 'pending';
+    const paymentType = body.payment_type || body.paymentType || null;
     const transactionId = body.transaction_id || body.transactionId || null;
-    const orderId = order_id;
+    const transactionTime = body.transaction_time || body.transactionTime || null;
     const gross = Number(body.gross_amount || body.grossAmount || 0);
 
-    // cari pembayaran berdasarkan referensi_pembayaran (orderId)
-    const [rows] = await pool.query('SELECT * FROM pembayaran WHERE referensi_pembayaran = ? LIMIT 1', [orderId]);
+    // Cari pembayaran berdasarkan referensi (order_id)
+    const [rows] = await pool.query(
+      'SELECT * FROM pembayaran WHERE referensi_pembayaran = ? ORDER BY id_pembayaran DESC LIMIT 1',
+      [order_id]
+    );
     const pembayaranRow = rows[0];
 
-    const timestampNow = new Date();
-
-    // simpan/ update entry pembayaran
+    // Jika belum ada baris (kasus edge), buat baru agar tidak NULL
     if (!pembayaranRow) {
-      // jika belum ada, insert (tidak ideal tapi aman)
       await pool.query(
-        `INSERT INTO pembayaran (id_pesanan, metode_pembayaran, status_pembayaran, jumlah_bayar, referensi_pembayaran, respon_gateway, tanggal_pembayaran, tanggal_dibuat)
+        `INSERT INTO pembayaran 
+          (id_pesanan, metode_pembayaran, status_pembayaran, jumlah_bayar, referensi_pembayaran, respon_gateway, tanggal_pembayaran, tanggal_dibuat)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [null, 'midtrans_snap', transactionStatus, gross, orderId, JSON.stringify(body), transactionTime || timestampNow]
+        [null, paymentType || 'qris', transactionStatus, gross, order_id, JSON.stringify(body), transactionTime || new Date()]
       );
     } else {
-      // update respon_gateway + status + tanggal_pembayaran bila perlu
+      // Update pembayaran: isi sebanyak mungkin kolom
       await pool.query(
         `UPDATE pembayaran
-         SET status_pembayaran = ?, respon_gateway = ?, tanggal_pembayaran = ?
+           SET status_pembayaran = ?,
+               jumlah_bayar = ?,
+               respon_gateway = ?,
+               tanggal_pembayaran = ?
          WHERE id_pembayaran = ?`,
-        [transactionStatus, JSON.stringify(body), transactionTime || timestampNow, pembayaranRow.id_pembayaran]
+        [transactionStatus, gross || pembayaranRow.jumlah_bayar, JSON.stringify(body), transactionTime || new Date(), pembayaranRow.id_pembayaran]
       );
 
-      // update pesanan status sesuai transactionStatus (settlement/capture => terkonfirmasi)
+      // Kolom tambahan (jika ada di skema)
+      try {
+        await pool.query(
+          `UPDATE pembayaran
+             SET payment_type = ?, transaction_id = ?
+           WHERE id_pembayaran = ?`,
+          [paymentType, transactionId, pembayaranRow.id_pembayaran]
+        );
+      } catch (e) {
+        // abaikan jika kolom tidak ada
+      }
+
+      // Sinkron status pesanan
       if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
         await pool.query('UPDATE pesanan SET status = ? WHERE id_pesanan = ?', ['terkonfirmasi', pembayaranRow.id_pesanan]);
       } else if (['cancel', 'deny', 'expire', 'failure'].includes(transactionStatus)) {
         await pool.query('UPDATE pesanan SET status = ? WHERE id_pesanan = ?', ['dibatalkan', pembayaranRow.id_pesanan]);
-      } // pending/other statuses keep as is
+      } else {
+        // pending/others: biarkan apa adanya
+      }
     }
 
     return res.status(200).json({ message: 'OK' });

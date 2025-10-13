@@ -1,0 +1,56 @@
+[
+  {
+    "id": 9,
+    "aktivitas": "Menambahkan menu 'qqqqq' di cabang 1",
+    "admin": "isra rahma dina",
+    "waktu": "13 Oktober 2025 pukul 21.10"
+  },
+  {
+    "id": 8,
+    "aktivitas": "Menghapus menu ID 4 di cabang 1",
+    "admin": "isra rahma dina",
+    "waktu": "13 Oktober 2025 pukul 21.10"
+  },
+  {
+    "id": 7,
+    "aktivitas": "Mengupdate menu '1111' di cabang 1",
+    "admin": "isra rahma dina",
+    "waktu": "13 Oktober 2025 pukul 21.10"
+  },
+  {
+    "id": 6,
+    "aktivitas": "Mengupdate menu '1111' di cabang 1",
+    "admin": "isra rahma dina",
+    "waktu": "13 Oktober 2025 pukul 20.57"
+  },
+  {
+    "id": 5,
+    "aktivitas": "Menghapus menu ID 7 di cabang 1",
+    "admin": "isra rahma dina",
+    "waktu": "13 Oktober 2025 pukul 20.51"
+  },
+  {
+    "id": 4,
+    "aktivitas": "Menambahkan menu 'satu dua' di cabang 1",
+    "admin": "Unknown Admin",
+    "waktu": "13 Oktober 2025 pukul 20.46"
+  },
+  {
+    "id": 3,
+    "aktivitas": "Menghapus menu ID 5 di cabang 1",
+    "admin": "Unknown Admin",
+    "waktu": "13 Oktober 2025 pukul 20.45"
+  },
+  {
+    "id": 2,
+    "aktivitas": "Menambahkan pengguna 'abcd@gmail.com' sebagai staff",
+    "admin": "Unknown Admin",
+    "waktu": "12 Oktober 2025 pukul 04.49"
+  },
+  {
+    "id": 1,
+    "aktivitas": "Menambahkan pengguna '111' sebagai staff",
+    "admin": "Unknown Admin",
+    "waktu": "12 Oktober 2025 pukul 04.48"
+  }
+]

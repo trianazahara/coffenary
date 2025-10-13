@@ -319,7 +319,8 @@ document.head.appendChild(sidebarStyle);
 
     const adminMenuItems = [
         { path: '/admin/pengguna', icon: Users, label: 'Pengguna' },
-        { path: '/admin/log-aktivitas', icon: History, label: 'Log Aktivitas' }
+        { path: '/admin/log-aktivitas', icon: History, label: 'Log Aktivitas' },
+         { path: '/admin/daftar-pelanggan', icon: User, label: 'Daftar Pelanggan' } 
     ];
 
     const getUserInitials = (name) => {

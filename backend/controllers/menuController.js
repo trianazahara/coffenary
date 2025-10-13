@@ -1,5 +1,6 @@
 const Menu = require('../models/menuModel');
 const pool = require('../config/db'); // Import pool untuk raw queries
+const LogModel = require('../models/logModel'); // ✅ tambahkan ini di paling atas
 
 const getAllMenuByCabang = async (req, res) => {
     try {
@@ -34,7 +35,20 @@ const createMenu = async (req, res) => {
             id_cabang: parseInt(id_cabang),
             gambar: req.file ? req.file.path.replace(/\\/g, "/") : null
         };
+
         const newMenu = await Menu.create(menuData);
+
+        // ✅ Tambahan aman di sini:
+        const adminName = req.user?.nama_lengkap || "Unknown Admin";
+        try {
+            await LogModel.addLog(
+                `Menambahkan menu '${menuData.nama_menu}' di cabang ${id_cabang}`,
+                adminName
+            );
+        } catch (logError) {
+            console.error("Gagal menulis log aktivitas:", logError);
+        }
+
         res.status(201).json({ message: 'Menu berhasil ditambahkan', data: newMenu });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -50,6 +64,18 @@ const updateMenu = async (req, res) => {
         }
         const result = await Menu.update(id_menu, id_cabang, menuData);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Menu tidak ditemukan' });
+
+        // ✅ Tambahan aman untuk log update
+        const adminName = req.user?.nama_lengkap || "Unknown Admin";
+        try {
+            await LogModel.addLog(
+                `Mengupdate menu '${menuData.nama_menu || id_menu}' di cabang ${id_cabang}`,
+                adminName
+            );
+        } catch (logError) {
+            console.error("Gagal menulis log aktivitas:", logError);
+        }
+
         res.json({ message: 'Menu berhasil diperbarui' });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -61,6 +87,18 @@ const deleteMenu = async (req, res) => {
         const { id_cabang, id_menu } = req.params;
         const result = await Menu.delete(id_menu, id_cabang);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Menu tidak ditemukan' });
+
+        // ✅ Tambahan aman untuk log hapus
+        const adminName = req.user?.nama_lengkap || "Unknown Admin";
+        try {
+            await LogModel.addLog(
+                `Menghapus menu ID ${id_menu} di cabang ${id_cabang}`,
+                adminName
+            );
+        } catch (logError) {
+            console.error("Gagal menulis log aktivitas:", logError);
+        }
+
         res.json({ message: 'Menu berhasil dihapus' });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });

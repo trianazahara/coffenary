@@ -1,18 +1,30 @@
 const jwt = require('jsonwebtoken');
+const pool = require('../config/db'); // ⬅️ tambahkan ini
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = decoded; // Menambahkan { id, peran } ke request
+
+            // Ambil data lengkap pengguna dari DB berdasarkan ID
+            const [rows] = await pool.query(
+                'SELECT id_pengguna, nama_lengkap, peran FROM pengguna WHERE id_pengguna = ?',
+                [decoded.id]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+            }
+
+            req.user = rows[0]; // Sekarang req.user ada nama_lengkap dan peran
             next();
         } catch (error) {
+            console.error('Auth error:', error);
             res.status(401).json({ message: 'Tidak terotentikasi, token gagal' });
         }
-    }
-    if (!token) {
+    } else {
         res.status(401).json({ message: 'Tidak terotentikasi, tidak ada token' });
     }
 };

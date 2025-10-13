@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-// Middleware
+// Middlewarea
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -21,7 +21,7 @@ const logRoutes = require("./routes/logRoutes");
 const checkoutRoutes = require('./routes/checkoutRoutes');
 const tempatDudukRoutes = require('./routes/tempatDudukRoutes');
 const pembayaranRoutes = require('./routes/pembayaranRoutes');
-
+const pelangganRoutes = require("./routes/pelangganRoutes");
 
 
 
@@ -43,8 +43,7 @@ app.use('/api/logs', logRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/tempat-duduk', tempatDudukRoutes);
 app.use('/api/pembayaran', pembayaranRoutes);
-
+app.use("/api/pelanggan", pelangganRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server berjalan di port ${PORT}`));
-

@@ -38,30 +38,24 @@ static async findAll(filter = {}) {
 }
 
    static async update(id, data) {
-    const { nama_lengkap, telepon, peran, is_aktif, kata_sandi_hash } = data;
+    const { nama_lengkap = null, telepon = null, peran, is_aktif, kata_sandi_hash } = data;
 
-    // Ambil data lama dari database
     const [oldRows] = await pool.query('SELECT * FROM pengguna WHERE id_pengguna = ?', [id]);
     const oldData = oldRows[0];
 
-    // Gunakan nilai lama jika data baru tidak dikirim
-    const finalPeran = peran ?? oldData.peran;
-    const finalIsAktif = is_aktif ?? oldData.is_aktif;
+    const finalPeran = typeof peran !== 'undefined' ? peran : oldData.peran;
+    const finalIsAktif = typeof is_aktif !== 'undefined' ? is_aktif : oldData.is_aktif;
 
     let query = 'UPDATE pengguna SET nama_lengkap = ?, telepon = ?, peran = ?, is_aktif = ?';
-    const params = [nama_lengkap, telepon, finalPeran, finalIsAktif];
+    const params = [nama_lengkap ?? oldData.nama_lengkap, telepon ?? oldData.telepon, finalPeran, finalIsAktif];
 
-    if (kata_sandi_hash) {
-        query += ', kata_sandi_hash = ?';
-        params.push(kata_sandi_hash);
-    }
+    if (kata_sandi_hash) { query += ', kata_sandi_hash = ?'; params.push(kata_sandi_hash); }
 
-    query += ' WHERE id_pengguna = ?';
-    params.push(id);
+    query += ' WHERE id_pengguna = ?'; params.push(id);
 
     const [result] = await pool.query(query, params);
     return result;
-}
+    }
     static async setOtp(email, otp_hash, otp_expiry) {
         const [result] = await pool.query(
             'UPDATE pengguna SET otp_hash = ?, otp_expiry = ? WHERE email = ?',
@@ -75,6 +69,37 @@ static async findAll(filter = {}) {
             'UPDATE pengguna SET kata_sandi_hash = ?, otp_hash = NULL, otp_expiry = NULL WHERE email = ?',
             [kata_sandi_hash, email]
         );
+        return result;
+    }
+
+    static async updateProfile(id, data) {
+        const allowed = [
+        'nama_lengkap',
+        'email',
+        'telepon',
+        'kata_sandi_hash',
+        ];
+
+        const sets = [];
+        const vals = [];
+
+        for (const key of allowed) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+            sets.push(`${key} = ?`);
+            vals.push(data[key]);
+        }
+        }
+
+        if (!sets.length) return { affectedRows: 0, changedRows: 0 };
+
+        const sql = `
+        UPDATE pengguna
+        SET ${sets.join(', ')}, tanggal_diupdate = NOW()
+        WHERE id_pengguna = ?
+        `;
+        vals.push(id);
+
+        const [result] = await pool.query(sql, vals);
         return result;
     }
 

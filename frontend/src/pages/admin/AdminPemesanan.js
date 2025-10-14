@@ -2,14 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 import { NotificationContext } from '../../context/NotificationContext';
-import { Eye, X, MessageSquare, Search, Calendar, RefreshCw } from 'lucide-react';
+import { Eye, X, MessageSquare, Search, Calendar, RefreshCw, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 const statusStyles = {
     pending: { backgroundColor: '#fffbeb', color: '#f59e0b', text: 'Menunggu Konfirmasi' },
     terkonfirmasi: { backgroundColor: '#eff6ff', color: '#3b82f6', text: 'Terkonfirmasi' },
     dalam_persiapan: { backgroundColor: '#e0e7ff', color: '#4338ca', text: 'Sedang Disiapkan' },
-    siap: { backgroundColor: '#f0fdf4', color: '#16a34a', text: 'Siap Diambil' },
-    selesai: { backgroundColor: '#f3f4f6', color: '#6b7280', text: 'Selesai' },
+    siap: { backgroundColor: '#f3f4f6', color: '#f6d518', text: 'Siap Diambil' },
+    selesai: { backgroundColor: '#f0fdf4', color: '#16a34a', text: 'Selesai' },
     dibatalkan: { backgroundColor: '#fee2e2', color: '#ef4444', text: 'Dibatalkan' },
 };
 
@@ -20,7 +20,7 @@ const styles = {
     subtitle: { color: '#6b7280', fontSize: '1rem' },
     filterBar: { 
         display: 'flex', 
-        gap: '1rem', 
+        gap: '6rem', 
         marginBottom: '2rem', 
         flexWrap: 'wrap',
         backgroundColor: 'white',
@@ -290,6 +290,121 @@ const styles = {
         paddingTop: '1rem',
         borderTop: '2px solid #e5e7eb',
         color: '#111827'
+    },
+    // New styles for status confirmation modal
+    statusModalContent: {
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '1rem',
+        width: '100%',
+        maxWidth: '480px',
+        position: 'relative',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        textAlign: 'center'
+    },
+    statusIconContainer: {
+        width: '80px',
+        height: '80px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 1.5rem',
+        fontSize: '2rem'
+    },
+    statusModalTitle: {
+        fontSize: '1.5rem',
+        fontWeight: 'bold',
+        marginBottom: '1rem',
+        color: '#111827'
+    },
+    statusModalText: {
+        color: '#6b7280',
+        marginBottom: '2rem',
+        lineHeight: '1.6'
+    },
+    statusInfoBox: {
+        backgroundColor: '#f8fafc',
+        padding: '1.25rem',
+        borderRadius: '0.75rem',
+        marginBottom: '2rem',
+        border: '1px solid #e2e8f0',
+        textAlign: 'left'
+    },
+    statusInfoRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '0.75rem',
+        paddingBottom: '0.75rem',
+        borderBottom: '1px solid #f1f5f9'
+    },
+    statusInfoLabel: {
+        color: '#64748b',
+        fontWeight: '500'
+    },
+    statusInfoValue: {
+        fontWeight: '600',
+        color: '#1e293b'
+    },
+    statusChangeHighlight: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '1rem',
+        margin: '1.5rem 0',
+        padding: '1rem',
+        backgroundColor: '#f0f9ff',
+        borderRadius: '0.75rem',
+        border: '1px solid #bae6fd'
+    },
+    statusArrow: {
+        color: '#0ea5e9',
+        fontSize: '1.5rem',
+        fontWeight: 'bold'
+    },
+    oldStatus: {
+        padding: '0.5rem 1rem',
+        backgroundColor: '#f1f5f9',
+        color: '#64748b',
+        borderRadius: '0.5rem',
+        fontWeight: '600',
+        fontSize: '0.9rem'
+    },
+    newStatus: {
+        padding: '0.5rem 1rem',
+        backgroundColor: '#dbeafe',
+        color: '#1d4ed8',
+        borderRadius: '0.5rem',
+        fontWeight: '600',
+        fontSize: '0.9rem'
+    },
+    modalActions: {
+        display: 'flex',
+        gap: '1rem',
+        justifyContent: 'center'
+    },
+    cancelButton: {
+        padding: '0.75rem 1.5rem',
+        backgroundColor: 'white',
+        color: '#64748b',
+        border: '1px solid #d1d5db',
+        borderRadius: '0.5rem',
+        cursor: 'pointer',
+        fontWeight: '500',
+        transition: 'all 0.2s',
+        minWidth: '100px'
+    },
+    confirmButton: {
+        padding: '0.75rem 1.5rem',
+        backgroundColor: '#10b981',
+        color: 'white',
+        border: 'none',
+        borderRadius: '0.5rem',
+        cursor: 'pointer',
+        fontWeight: '500',
+        transition: 'all 0.2s',
+        minWidth: '100px'
     }
 };
 
@@ -306,6 +421,10 @@ const AdminPemesanan = () => {
     const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [hoveredCard, setHoveredCard] = useState(null);
+    
+    // New states for status confirmation modal
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+    const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
 
     const fetchOrders = async () => {
         if (!selectedBranch || !token) return;
@@ -389,17 +508,41 @@ const AdminPemesanan = () => {
         return { todayOrders, yesterdayOrders, olderOrders };
     };
 
-    const handleUpdateStatus = async (orderId, newStatus) => {
-        if (window.confirm(`Yakin mengubah status menjadi "${statusStyles[newStatus]?.text}"?`)) {
-            try {
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                await axios.put(`http://localhost:5000/api/pesanan/${orderId}/status`, { status: newStatus }, config);
-                fetchOrders();
-            } catch (err) {
-                alert('Gagal mengubah status pesanan.');
-                console.error(err);
-            }
+    // Modified handleUpdateStatus to use modal
+    const handleUpdateStatusClick = (orderId, currentStatus, newStatus) => {
+        const order = orders.find(o => o.id === orderId);
+        setPendingStatusUpdate({
+            orderId,
+            currentStatus,
+            newStatus,
+            orderNumber: order.displayId,
+            customerName: order.customer
+        });
+        setIsStatusModalOpen(true);
+    };
+
+    const handleConfirmStatusUpdate = async () => {
+        if (!pendingStatusUpdate) return;
+        
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            await axios.put(`http://localhost:5000/api/pesanan/${pendingStatusUpdate.orderId}/status`, 
+                { status: pendingStatusUpdate.newStatus }, config);
+            
+            fetchOrders();
+            setIsStatusModalOpen(false);
+            setPendingStatusUpdate(null);
+        } catch (err) {
+            alert('Gagal mengubah status pesanan.');
+            console.error(err);
+            setIsStatusModalOpen(false);
+            setPendingStatusUpdate(null);
         }
+    };
+
+    const handleCancelStatusUpdate = () => {
+        setIsStatusModalOpen(false);
+        setPendingStatusUpdate(null);
     };
 
     const handleOpenModal = async (orderId) => {
@@ -426,7 +569,7 @@ const AdminPemesanan = () => {
 
     const renderOrderCard = (order) => {
         const statusInfo = statusStyles[order.status] || { 
-            text: order.status.replace('_', ' ').toUpperCase(), 
+            text: order.status.replace(/_/g, ' ').toUpperCase(), 
             backgroundColor: '#e5e7eb', 
             color: '#4b5563' 
         };
@@ -472,7 +615,7 @@ const AdminPemesanan = () => {
                 <div style={styles.cardFooter}>
                     {order.status === 'pending' && (
                         <button 
-                            onClick={() => handleUpdateStatus(order.id, 'terkonfirmasi')} 
+                            onClick={() => handleUpdateStatusClick(order.id, order.status, 'terkonfirmasi')} 
                             style={{...styles.actionButton, backgroundColor: '#3b82f6'}}
                         >
                             Konfirmasi
@@ -480,7 +623,7 @@ const AdminPemesanan = () => {
                     )}
                     {order.status === 'terkonfirmasi' && (
                         <button 
-                            onClick={() => handleUpdateStatus(order.id, 'dalam_persiapan')} 
+                            onClick={() => handleUpdateStatusClick(order.id, order.status, 'dalam_persiapan')} 
                             style={{...styles.actionButton, backgroundColor: '#6366f1'}}
                         >
                             Siapkan
@@ -488,16 +631,16 @@ const AdminPemesanan = () => {
                     )}
                     {order.status === 'dalam_persiapan' && (
                         <button 
-                            onClick={() => handleUpdateStatus(order.id, 'siap')} 
-                            style={{...styles.actionButton, backgroundColor: '#22c55e'}}
+                            onClick={() => handleUpdateStatusClick(order.id, order.status, 'siap')} 
+                            style={{...styles.actionButton, backgroundColor: '#f6d518'}}
                         >
                             Siap Diambil
                         </button>
                     )}
                     {order.status === 'siap' && (
                         <button 
-                            onClick={() => handleUpdateStatus(order.id, 'selesai')} 
-                            style={{...styles.actionButton, backgroundColor: '#6b7280'}}
+                            onClick={() => handleUpdateStatusClick(order.id, order.status, 'selesai')} 
+                            style={{...styles.actionButton, backgroundColor: '#16a34a'}}
                         >
                             Selesaikan
                         </button>
@@ -676,7 +819,7 @@ const AdminPemesanan = () => {
                                             Tipe Pesanan
                                         </strong>
                                         <span style={{ fontWeight: '600', color: '#111827' }}>
-                                            {selectedOrderDetails.tipe_pesanan.replace('_', ' ').toUpperCase()}
+                                            {selectedOrderDetails.tipe_pesanan.replace(/_/g, ' ').toUpperCase()}
                                         </span>
                                     </div>
                                     
@@ -778,6 +921,87 @@ const AdminPemesanan = () => {
                                 <p style={{ color: '#ef4444', fontWeight: '500' }}>Gagal memuat detail pesanan.</p>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Status Confirmation Modal */}
+            {isStatusModalOpen && pendingStatusUpdate && (
+                <div style={styles.modalOverlay} onClick={handleCancelStatusUpdate}>
+                    <div style={styles.statusModalContent} onClick={(e) => e.stopPropagation()}>
+                        <button 
+                            onClick={handleCancelStatusUpdate} 
+                            style={styles.closeButton}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <X size={20} color="#6b7280" />
+                        </button>
+                        
+                        <div style={{
+                            ...styles.statusIconContainer,
+                            backgroundColor: '#f0f9ff'
+                        }}>
+                            <Info size={32} color="#0ea5e9" />
+                        </div>
+                        
+                        <h2 style={styles.statusModalTitle}>
+                            Konfirmasi Perubahan Status
+                        </h2>
+                        
+                        <p style={styles.statusModalText}>
+                            Anda akan mengubah status pesanan berikut:
+                        </p>
+                        
+                        <div style={styles.statusInfoBox}>
+                            <div style={styles.statusInfoRow}>
+                                <span style={styles.statusInfoLabel}>Nomor Pesanan:</span>
+                                <span style={styles.statusInfoValue}>{pendingStatusUpdate.orderNumber}</span>
+                            </div>
+                            <div style={styles.statusInfoRow}>
+                                <span style={styles.statusInfoLabel}>Pelanggan:</span>
+                                <span style={styles.statusInfoValue}>{pendingStatusUpdate.customerName}</span>
+                            </div>
+                        </div>
+                        
+                        <div style={styles.statusChangeHighlight}>
+                            <span style={styles.oldStatus}>
+                                {statusStyles[pendingStatusUpdate.currentStatus]?.text || pendingStatusUpdate.currentStatus}
+                            </span>
+                            <span style={styles.statusArrow}>→</span>
+                            <span style={styles.newStatus}>
+                                {statusStyles[pendingStatusUpdate.newStatus]?.text || pendingStatusUpdate.newStatus}
+                            </span>
+                        </div>
+                        
+                        <p style={{...styles.statusModalText, fontSize: '0.9rem', color: '#ef4444', fontWeight: '500'}}>
+                            ⚠️ Tindakan ini tidak dapat dibatalkan
+                        </p>
+                        
+                        <div style={styles.modalActions}>
+                            <button 
+                                onClick={handleCancelStatusUpdate}
+                                style={{
+                                    ...styles.cancelButton,
+                                    ':hover': { backgroundColor: '#f3f4f6' }
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                            >
+                                Batal
+                            </button>
+                            <button 
+                                onClick={handleConfirmStatusUpdate}
+                                style={{
+                                    ...styles.confirmButton,
+                                    ':hover': { backgroundColor: '#059669' }
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+                            >
+                                Ya, Ubah Status
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

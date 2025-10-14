@@ -55,7 +55,7 @@ const getPesananById = async (req, res) => {
 
 const getOrderHistory = async (req, res) => {
   try {
-    const id_pengguna = req.user?.id;
+    const id_pengguna = req.user?.id_pengguna;
     if (!id_pengguna) {
       return res.status(400).json({ message: 'id_pengguna tidak ditemukan pada token' });
     }
@@ -143,7 +143,7 @@ const getOrderHistory = async (req, res) => {
 
 const getPesananDetailForCustomer = async (req, res) => {
   const { id_pesanan } = req.params;
-  const id_pengguna = req.user?.id;
+  const id_pengguna = req.user?.id_pengguna;
 
   // + join tempat_duduk (td) untuk ambil nomor_meja
   const [rows] = await pool.query(`
@@ -204,7 +204,7 @@ const getPesananDetailForCustomer = async (req, res) => {
 
 const recreatePaymentForCustomer = async (req,res)=>{
   const { id_pesanan } = req.params;
-  const id_pengguna = req.user?.id;
+  const id_pengguna = req.user?.id_pengguna;
 
   // cek kepemilikan & ambil total
   const [rows] = await pool.query(`SELECT * FROM pesanan WHERE id_pesanan=? AND id_pengguna=? LIMIT 1`, [id_pesanan, id_pengguna]);

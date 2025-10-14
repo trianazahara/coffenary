@@ -6,7 +6,6 @@ import { NotificationProvider } from './context/NotificationContext';
 
 // Import Pages
 import AdminPrivateRoute from './components/AdminPrivateRoute';
-import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminLayout from './components/admin/AdminLayout';
 import PilihCabangPage from './pages/admin/PilihCabangPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -31,6 +30,7 @@ import ForgotPasswordPage from './pages/admin/ForgotPasswordPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminDaftarPelanggan from "./pages/admin/AdminDaftarPelanggan";
+import AdminTempatDuduk from './pages/admin/AdminTempatDuduk';
 
 
 function App() {
@@ -39,7 +39,6 @@ function App() {
     <NotificationProvider>
       <Routes>
         {/* Halaman Login Admin (Publik) */}
-        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/" element={<UserLoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} /> {/* Route untuk lupa password admin */}
@@ -58,6 +57,7 @@ function App() {
           <Route path="log-aktivitas" element={<AdminLogAktivitas />} /> {/* ✅ Tambahan */}
           <Route path="profile" element={<AdminProfilePage />} />
           <Route path="daftar-pelanggan" element={<AdminDaftarPelanggan />} />
+          <Route path="tempat-duduk" element={<AdminTempatDuduk />} />
         </Route>
 
         {/* Tambahkan rute untuk pelanggan di sini */}

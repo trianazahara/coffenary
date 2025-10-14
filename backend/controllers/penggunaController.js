@@ -3,8 +3,10 @@
 const Pengguna = require('../models/penggunaModel');
 const bcrypt = require('bcryptjs');
 const LogModel = require('../models/logModel');
+const user = require('../middleware/authMiddleware');
 const path = require('path');
 const fs = require('fs');
+const { log } = require('console');
 
 // ==================== GET ALL ====================
 const getAllPengguna = async (req, res) => {
@@ -56,25 +58,30 @@ const updatePengguna = async (req, res) => {
     const { id } = req.params;
     const { password, ...otherData } = req.body;
 
-    // Cek apakah pengguna ada
-    const pengguna = await Pengguna.findByPk(id);
+    const pengguna = await Pengguna.findById(id);
     if (!pengguna) {
       return res.status(404).json({ message: "Pengguna tidak ditemukan" });
     }
 
-    // Jika password diisi, hash dulu
+    // Normalisasi opsional (biar tidak kirim string '1'/'0' ke kolom tinyint)
+    if (typeof otherData.is_aktif !== 'undefined') {
+      otherData.is_aktif = Number(otherData.is_aktif) ? 1 : 0;
+    }
+    if (otherData.peran && !['admin', 'staff', 'pelanggan'].includes(otherData.peran)) {
+      return res.status(400).json({ message: 'Peran tidak valid.' });
+    }
+
     if (password && password.trim() !== "") {
       otherData.kata_sandi_hash = await bcrypt.hash(password, 10);
     }
 
-    // Jalankan update ke DB lewat model manual
-    const [result] = await Pengguna.update(id, otherData);
+    // ✅ cukup ambil objek result (tanpa destructuring array)
+    const result = await Pengguna.update(id, otherData);
 
     if (result.affectedRows === 0) {
       return res.status(400).json({ message: "Tidak ada data yang diubah" });
     }
 
-    // Tambah log aktivitas
     const adminName = req.user?.nama_lengkap || "Unknown Admin";
     await LogModel.addLog(
       `Mengupdate data pengguna '${pengguna.nama_lengkap}' (ID: ${id})`,
@@ -87,9 +94,7 @@ const updatePengguna = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error saat update pengguna:", error);
-    res
-      .status(500)
-      .json({ message: "Server Error saat update pengguna", error: error.message });
+    res.status(500).json({ message: "Server Error saat update pengguna", error: error.message });
   }
 };
 
@@ -130,11 +135,36 @@ const updateProfile = async (req, res) => {
     }
 };
 
+const updateProfilSaya = async (req, res) => {
+  try {
+    const id = req.user.id_pengguna;
+
+    const { peran, is_aktif, password, ...others } = req.body; 
+    const payload = { ...others };
+
+    if (password && password.trim() !== '') {
+      payload.kata_sandi_hash = await bcrypt.hash(password, 10);
+    }
+
+
+    const result = await Pengguna.updateProfile(id, payload);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Pengguna tidak ditemukan !' });
+    }
+
+    res.json({ message: 'Profil berhasil diperbarui.' });
+  } catch (error) {
+    console.error('updateProfilSaya error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 
 module.exports = {
   getAllPengguna,
   createPenggunaByAdmin,
-  updatePengguna, // ✅ versi baru
+  updateProfilSaya,
+  updatePengguna, 
   updateProfile,
   getProfile
 };

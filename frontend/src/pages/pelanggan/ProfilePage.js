@@ -15,8 +15,7 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  AlertCircle,
-  Camera
+  AlertCircle
 } from 'lucide-react';
 
 const styles = {
@@ -72,30 +71,10 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '3rem',
-    color: 'white',
+    color: '#10b981',
     fontWeight: '700',
     border: '4px solid white',
     boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
-  },
-  avatarButton: {
-    position: 'absolute',
-    bottom: '0',
-    right: '0',
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    backgroundColor: '#10b981',
-    color: 'white',
-    border: '3px solid white',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  },
-  avatarButtonHover: {
-    backgroundColor: '#059669',
-    transform: 'scale(1.1)'
   },
   userName: {
     fontSize: '1.5rem',
@@ -287,7 +266,6 @@ const ProfilePage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
-  const [avatarHover, setAvatarHover] = useState(false);
   
   const [formData, setFormData] = useState({
     nama_lengkap: '',
@@ -457,17 +435,6 @@ const ProfilePage = () => {
             <div style={styles.avatarContainer}>
               <div style={styles.avatar}>
                 {getInitials(formData.nama_lengkap)}
-              </div>
-              <div 
-                style={{
-                  ...styles.avatarButton,
-                  ...(avatarHover ? styles.avatarButtonHover : {})
-                }}
-                onMouseEnter={() => setAvatarHover(true)}
-                onMouseLeave={() => setAvatarHover(false)}
-                title="Ubah foto (coming soon)"
-              >
-                <Camera size={16} />
               </div>
             </div>
             <div style={styles.userName}>{formData.nama_lengkap || 'Nama Pengguna'}</div>

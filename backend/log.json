@@ -1,5 +1,107 @@
 [
   {
+    "id": 26,
+    "aktivitas": "Mengupdate data pengguna 'Bagogo sang penipu ulung' (ID: 6)",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 02.20"
+  },
+  {
+    "id": 25,
+    "aktivitas": "Menambahkan pengguna 'fdasd' sebagai staff",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 01.39"
+  },
+  {
+    "id": 24,
+    "aktivitas": "Mengupdate data pengguna 'Bagogo sang penipu' (ID: 6)",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 01.38"
+  },
+  {
+    "id": 23,
+    "aktivitas": "Menambahkan pengguna 'asd' sebagai staff",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 01.24"
+  },
+  {
+    "id": 22,
+    "aktivitas": "Mengupdate data pengguna 'Bagogo' (ID: 6)",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 01.23"
+  },
+  {
+    "id": 21,
+    "aktivitas": "Menghapus menu ID 9 di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 00.18"
+  },
+  {
+    "id": 20,
+    "aktivitas": "Menambahkan menu 'asdad' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 00.18"
+  },
+  {
+    "id": 19,
+    "aktivitas": "Menghapus menu ID 8 di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 00.03"
+  },
+  {
+    "id": 18,
+    "aktivitas": "Mengupdate menu 'asd' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 00.03"
+  },
+  {
+    "id": 17,
+    "aktivitas": "Menambahkan menu 'qwe' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "15 Oktober 2025 pukul 00.03"
+  },
+  {
+    "id": 16,
+    "aktivitas": "Menghapus menu ID 7 di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.56"
+  },
+  {
+    "id": 15,
+    "aktivitas": "Mengupdate menu 'dsadasd' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.56"
+  },
+  {
+    "id": 14,
+    "aktivitas": "Menambahkan menu 'asdasd' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.55"
+  },
+  {
+    "id": 13,
+    "aktivitas": "Menghapus menu ID 6 di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.50"
+  },
+  {
+    "id": 12,
+    "aktivitas": "Menambahkan menu 'asdasd' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.50"
+  },
+  {
+    "id": 11,
+    "aktivitas": "Menghapus menu ID 5 di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.44"
+  },
+  {
+    "id": 10,
+    "aktivitas": "Menambahkan menu 'asdasd' di cabang 1",
+    "admin": "Fadli Hidayat",
+    "waktu": "14 Oktober 2025 pukul 23.44"
+  },
+  {
     "id": 9,
     "aktivitas": "Menambahkan menu 'qqqqq' di cabang 1",
     "admin": "isra rahma dina",

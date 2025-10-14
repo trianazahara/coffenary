@@ -9,7 +9,7 @@ router.get('/detail-pelanggan/:id_pesanan', protect, checkRole(['pelanggan']), g
 router.post('/:id_pesanan/pay/recreate', protect, checkRole(['pelanggan']), recreatePaymentForCustomer);
 router.get('/pembayaran/:id_pesanan/latest', protect, checkRole(['pelanggan']), async (req,res)=>{
   const { id_pesanan } = req.params;
-  const id_pengguna = req.user?.id;
+  const id_pengguna = req.user?.id_pengguna;
   const [own] = await pool.query(`SELECT 1 FROM pesanan WHERE id_pesanan=? AND id_pengguna=?`, [id_pesanan, id_pengguna]);
   if (!own.length) return res.status(404).json({message:'Tidak ditemukan'});
 

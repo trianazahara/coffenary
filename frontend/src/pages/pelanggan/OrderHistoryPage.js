@@ -1,4 +1,3 @@
-// src/pages/pelanggan/OrderHistoryPage.js
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -8,24 +7,28 @@ import {
   Clock, 
   CheckCircle, 
   XCircle, 
-  AlertCircle,
   ChefHat,
   Package,
   Eye,
   RefreshCw,
   Calendar,
   Filter,
-  Search,
   MapPin,
   CreditCard,
-  Receipt
+  Receipt,
+  ArrowRight,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Store,
+  User
 } from 'lucide-react';
 
 const styles = {
   container: {
     minHeight: '100vh',
     backgroundColor: '#f8fafc',
-    paddingTop: '70px'
+    paddingTop: '72px'
   },
   main: {
     maxWidth: '1200px',
@@ -33,69 +36,63 @@ const styles = {
     padding: '2rem 1rem'
   },
   header: {
-    marginBottom: '2rem'
+    marginBottom: '2rem',
+    textAlign: 'center'
   },
   title: {
-    fontSize: '2rem',
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: '0.5rem'
+    fontSize: '2.5rem',
+    fontWeight: '800',
+    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    marginBottom: '0.75rem',
+    letterSpacing: '-0.025em'
   },
   subtitle: {
     color: '#64748b',
-    fontSize: '1rem'
+    fontSize: '1.1rem',
+    maxWidth: '600px',
+    margin: '0 auto',
+    lineHeight: '1.6'
   },
   filterSection: {
     backgroundColor: 'white',
-    borderRadius: '1rem',
-    padding: '1.5rem',
+    borderRadius: '1.5rem',
+    padding: '2rem',
     marginBottom: '2rem',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)',
-    border: '1px solid rgba(226, 232, 240, 0.5)'
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+    border: '1px solid rgba(226, 232, 240, 0.5)',
+    backdropFilter: 'blur(10px)'
   },
   filterHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
+    justifyContent: 'space-between',
     marginBottom: '1.5rem',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    color: '#1e293b'
+    flexWrap: 'wrap',
+    gap: '1rem'
+  },
+  filterTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: '#1e293b',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem'
+  },
+  filterStats: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    color: '#64748b',
+    fontSize: '0.9rem'
   },
   filterControls: {
-    display: 'flex',
-    gap: '1rem',
-    flexWrap: 'wrap',
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: '1.5rem',
     alignItems: 'center'
-  },
-  searchContainer: {
-    position: 'relative',
-    flex: '1',
-    minWidth: '250px'
-  },
-  searchInput: {
-    width: '100%',
-    padding: '0.75rem 1rem 0.75rem 2.5rem',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.75rem',
-    fontSize: '0.95rem',
-    backgroundColor: '#f8fafc',
-    transition: 'all 0.2s ease',
-    outline: 'none'
-  },
-  searchInputFocus: {
-    borderColor: '#10b981',
-    backgroundColor: '#ffffff',
-    boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: '0.75rem',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    color: '#94a3b8',
-    width: '1.1rem',
-    height: '1.1rem'
   },
   statusFilters: {
     display: 'flex',
@@ -103,15 +100,15 @@ const styles = {
     flexWrap: 'wrap'
   },
   statusButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '0.5rem',
-    border: '1px solid #e2e8f0',
+    padding: '0.75rem 1.25rem',
+    borderRadius: '1rem',
+    border: '2px solid #f1f5f9',
     backgroundColor: 'white',
     color: '#64748b',
     fontSize: '0.9rem',
-    fontWeight: '500',
+    fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'all 0.3s ease',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem'
@@ -119,7 +116,9 @@ const styles = {
   statusButtonActive: {
     backgroundColor: '#10b981',
     color: 'white',
-    borderColor: '#10b981'
+    borderColor: '#10b981',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
   },
   orderList: {
     display: 'flex',
@@ -128,165 +127,185 @@ const styles = {
   },
   orderCard: {
     backgroundColor: 'white',
-    borderRadius: '1rem',
-    padding: '1.5rem',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)',
+    borderRadius: '1.5rem',
+    padding: '2rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
     border: '1px solid rgba(226, 232, 240, 0.5)',
-    transition: 'all 0.3s ease'
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden'
   },
   orderCardHover: {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+    transform: 'translateY(-8px)',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+    borderColor: 'rgba(16, 185, 129, 0.3)'
   },
   orderHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: '1rem'
+    marginBottom: '1.5rem',
+    gap: '1rem'
   },
-  orderInfo: {
+  orderMainInfo: {
     flex: 1
   },
   orderNumber: {
-    fontSize: '1.1rem',
-    fontWeight: '600',
+    fontSize: '1.5rem',
+    fontWeight: '800',
     color: '#1e293b',
-    marginBottom: '0.25rem'
-  },
-  orderDate: {
-    color: '#64748b',
-    fontSize: '0.9rem',
+    marginBottom: '0.5rem',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem'
+    gap: '0.75rem'
   },
-  orderLocation: {
-    color: '#64748b',
-    fontSize: '0.9rem',
+  orderMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1.5rem',
+    flexWrap: 'wrap'
+  },
+  orderMetaItem: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    marginTop: '0.25rem'
+    color: '#64748b',
+    fontSize: '0.9rem',
+    fontWeight: '500'
+  },
+  statusSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '0.75rem'
   },
   statusBadge: {
-    padding: '0.5rem 1rem',
-    borderRadius: '1rem',
-    fontSize: '0.8rem',
-    fontWeight: '600',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '2rem',
+    fontSize: '0.85rem',
+    fontWeight: '700',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem'
+    gap: '0.5rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
   },
   statusPending: {
     backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    color: '#d97706'
+    color: '#d97706',
+    border: '1px solid rgba(251, 191, 36, 0.3)'
   },
   statusConfirmed: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    color: '#2563eb'
+    color: '#2563eb',
+    border: '1px solid rgba(59, 130, 246, 0.3)'
   },
   statusPreparing: {
     backgroundColor: 'rgba(168, 85, 247, 0.1)',
-    color: '#7c3aed'
+    color: '#7c3aed',
+    border: '1px solid rgba(168, 85, 247, 0.3)'
   },
   statusReady: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    color: '#059669'
+    color: '#059669',
+    border: '1px solid rgba(16, 185, 129, 0.3)'
   },
   statusCompleted: {
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    color: '#16a34a'
+    color: '#16a34a',
+    border: '1px solid rgba(34, 197, 94, 0.3)'
   },
   statusCancelled: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    color: '#dc2626'
+    color: '#dc2626',
+    border: '1px solid rgba(239, 68, 68, 0.3)'
+  },
+  totalAmount: {
+    fontSize: '1.5rem',
+    fontWeight: '800',
+    color: '#059669'
   },
   orderDetails: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '1rem',
-    marginBottom: '1rem'
-  },
-  detailItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    color: '#64748b',
-    fontSize: '0.9rem'
-  },
-  detailIcon: {
-    color: '#94a3b8',
-    width: '1rem',
-    height: '1rem'
-  },
-  itemsList: {
     backgroundColor: '#f8fafc',
-    borderRadius: '0.75rem',
-    padding: '1rem',
-    marginBottom: '1rem'
+    borderRadius: '1rem',
+    padding: '1.5rem',
+    marginBottom: '1.5rem'
   },
-  itemsHeader: {
-    fontSize: '0.9rem',
-    fontWeight: '600',
-    color: '#64748b',
-    marginBottom: '0.75rem',
+  detailsHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem'
+    justifyContent: 'space-between',
+    marginBottom: '1rem',
+    cursor: 'pointer'
+  },
+  detailsTitle: {
+    fontSize: '1.1rem',
+    fontWeight: '700',
+    color: '#1e293b',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem'
+  },
+  itemsGrid: {
+    display: 'grid',
+    gap: '1rem'
   },
   menuItem: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.5rem 0',
-    borderBottom: '1px solid #e2e8f0'
+    justifyContent: 'space-between',
+    padding: '1rem',
+    backgroundColor: 'white',
+    borderRadius: '0.75rem',
+    border: '1px solid rgba(226, 232, 240, 0.5)',
+    transition: 'all 0.3s ease'
   },
-  menuItemLast: {
-    borderBottom: 'none'
+  menuItemHover: {
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    transform: 'translateX(4px)'
   },
   menuItemInfo: {
     flex: 1
   },
   menuItemName: {
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#1e293b',
-    fontSize: '0.9rem'
+    fontSize: '1rem',
+    marginBottom: '0.25rem'
   },
   menuItemDetails: {
     color: '#64748b',
-    fontSize: '0.8rem',
-    marginTop: '0.25rem'
+    fontSize: '0.85rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
   },
   menuItemPrice: {
-    fontWeight: '600',
-    color: '#059669'
+    fontWeight: '700',
+    color: '#059669',
+    fontSize: '1.1rem'
   },
   orderFooter: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: '1rem',
-    borderTop: '1px solid #e2e8f0'
-  },
-  totalPrice: {
-    fontSize: '1.2rem',
-    fontWeight: '700',
-    color: '#1e293b'
+    paddingTop: '1.5rem',
+    borderTop: '2px solid #f1f5f9'
   },
   orderActions: {
     display: 'flex',
-    gap: '0.75rem'
+    gap: '1rem'
   },
   actionButton: {
-    padding: '0.5rem 1rem',
-    borderRadius: '0.5rem',
-    border: '1px solid #e2e8f0',
+    padding: '0.875rem 1.5rem',
+    borderRadius: '1rem',
+    border: '2px solid #e2e8f0',
     backgroundColor: 'white',
     color: '#64748b',
     fontSize: '0.9rem',
-    fontWeight: '500',
+    fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'all 0.3s ease',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem'
@@ -297,36 +316,60 @@ const styles = {
     borderColor: '#10b981'
   },
   actionButtonHover: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#94a3b8'
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
   },
   emptyState: {
     textAlign: 'center',
-    padding: '3rem',
-    color: '#64748b'
+    padding: '4rem 2rem',
+    backgroundColor: 'white',
+    borderRadius: '1.5rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+  },
+  emptyIcon: {
+    fontSize: '4rem',
+    marginBottom: '1.5rem',
+    opacity: 0.5
   },
   loadingState: {
     textAlign: 'center',
-    padding: '3rem',
-    color: '#64748b'
+    padding: '4rem 2rem'
+  },
+  loadingSpinner: {
+    width: '48px',
+    height: '48px',
+    border: '3px solid #f3f4f6',
+    borderTop: '3px solid #10b981',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    margin: '0 auto 1.5rem'
   }
 };
 
 const styleSheet = document.createElement('style');
 styleSheet.textContent = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
   @media (max-width: 768px) {
-    .filter-controls { flex-direction: column; align-items: stretch; }
-    .order-header { flex-direction: column; gap: 1rem; align-items: stretch; }
-    .order-details { grid-template-columns: 1fr; }
-    .order-footer { flex-direction: column; gap: 1rem; align-items: stretch; }
+    .filter-controls { grid-template-columns: 1fr !important; gap: 1rem; }
+    .order-header { flex-direction: column; align-items: stretch; }
+    .order-meta { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    .status-section { align-items: stretch; }
+    .order-footer { flex-direction: column; gap: 1.5rem; align-items: stretch; }
     .order-actions { justify-content: center; }
     .main-padding { padding: 1rem !important; }
+    .filter-header { flex-direction: column; align-items: stretch; }
   }
   
   @media (max-width: 480px) {
-    .filter-section { padding: 1rem !important; }
-    .order-card { padding: 1rem !important; }
+    .filter-section { padding: 1.5rem !important; }
+    .order-card { padding: 1.5rem !important; }
     .status-filters { justify-content: center; }
+    .order-actions { flex-direction: column; }
+    .title { font-size: 2rem !important; }
   }
 `;
 if (!document.querySelector('#history-styles')) {
@@ -342,10 +385,11 @@ const OrderHistoryPage = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('semua');
-  const [searchFocus, setSearchFocus] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [expandedOrders, setExpandedOrders] = useState(new Set());
+  const [hoveredAction, setHoveredAction] = useState({});
 
   const statusOptions = [
     { id: 'semua', label: 'Semua', icon: <Filter size={16} /> },
@@ -359,13 +403,11 @@ const OrderHistoryPage = () => {
 
   useEffect(() => {
     fetchOrderHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders, searchTerm, selectedStatus]);
+  }, [orders, selectedStatus]);
 
   const fetchOrderHistory = async () => {
     try {
@@ -376,7 +418,6 @@ const OrderHistoryPage = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // backend sudah memberi: id, nomor_pesanan, tanggal_dibuat, status, total_harga, tipe_pesanan, cabang, metode_pembayaran, items[]
       setOrders(res.data || []);
     } catch (err) {
       console.error('Error fetching order history:', err);
@@ -393,26 +434,15 @@ const OrderHistoryPage = () => {
       filtered = filtered.filter(order => order.status === selectedStatus);
     }
 
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      filtered = filtered.filter(order =>
-        (order.nomor_pesanan || '').toLowerCase().includes(q) ||
-        (order.cabang || '').toLowerCase().includes(q) ||
-        (order.items || []).some(item => 
-          (item.nama_menu || '').toLowerCase().includes(q)
-        )
-      );
-    }
-
     setFilteredOrders(filtered);
   };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { style: styles.statusPending, icon: <Clock size={14} />, label: 'Menunggu' },
-      terkonfirmasi: { style: styles.statusConfirmed, icon: <AlertCircle size={14} />, label: 'Dikonfirmasi' },
-      dalam_persiapan: { style: styles.statusPreparing, icon: <ChefHat size={14} />, label: 'Diproses' },
-      siap: { style: styles.statusReady, icon: <Package size={14} />, label: 'Siap' },
+      pending: { style: styles.statusPending, icon: <Clock size={14} />, label: 'Menunggu Konfirmasi' },
+      terkonfirmasi: { style: styles.statusConfirmed, icon: <CheckCircle size={14} />, label: 'Dikonfirmasi' },
+      dalam_persiapan: { style: styles.statusPreparing, icon: <ChefHat size={14} />, label: 'Sedang Diproses' },
+      siap: { style: styles.statusReady, icon: <Package size={14} />, label: 'Siap Diambil' },
       selesai: { style: styles.statusCompleted, icon: <CheckCircle size={14} />, label: 'Selesai' },
       dibatalkan: { style: styles.statusCancelled, icon: <XCircle size={14} />, label: 'Dibatalkan' }
     };
@@ -430,7 +460,7 @@ const OrderHistoryPage = () => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('id-ID', {
       day: 'numeric',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -446,11 +476,10 @@ const OrderHistoryPage = () => {
   };
 
   const handleViewDetail = (orderId) => {
-    navigate(`/pelanggan/pesanan/${orderId}`);
+    navigate(`/pelanggan/status-pesanan/${orderId}`);
   };
 
   const handleReorder = (order) => {
-    // Sesuaikan dengan struktur CartContext (array of items, key: cart_pelanggan)
     const itemsForCart = (order.items || []).map(it => ({
       id_menu: it.id_menu,
       nama_menu: it.nama_menu,
@@ -464,13 +493,23 @@ const OrderHistoryPage = () => {
     navigate('/pelanggan/cart');
   };
 
+  const toggleOrderDetails = (orderId) => {
+    const newExpanded = new Set(expandedOrders);
+    if (newExpanded.has(orderId)) {
+      newExpanded.delete(orderId);
+    } else {
+      newExpanded.add(orderId);
+    }
+    setExpandedOrders(newExpanded);
+  };
+
   if (loading) {
     return (
       <div style={styles.container}>
         <Header />
         <div style={styles.loadingState}>
-          <Clock size={48} style={{ color: '#10b981', marginBottom: '1rem' }} />
-          <p>Memuat riwayat pesanan...</p>
+          <div style={styles.loadingSpinner} />
+          <p style={{ color: '#64748b', fontSize: '1.1rem' }}>Memuat riwayat pesanan...</p>
         </div>
       </div>
     );
@@ -485,37 +524,24 @@ const OrderHistoryPage = () => {
         <div style={styles.header}>
           <h1 style={styles.title}>Riwayat Pesanan</h1>
           <p style={styles.subtitle}>
-            Lihat semua pesanan Anda dan status terkininya
+            Kelola dan pantau semua pesanan Anda di Coffenary
           </p>
         </div>
 
         {/* Filter Section */}
-        <div style={styles.filterSection} className="filter-section">
+        <div style={styles.filterSection}>
           <div style={styles.filterHeader}>
-            <Filter size={20} />
-            Filter & Pencarian
+            <div style={styles.filterTitle}>
+              <Receipt size={24} />
+              Filter Pesanan
+            </div>
+            <div style={styles.filterStats}>
+              <span>{filteredOrders.length} pesanan ditemukan</span>
+            </div>
           </div>
 
           <div style={styles.filterControls} className="filter-controls">
-            {/* Search */}
-            <div style={styles.searchContainer}>
-              <Search style={styles.searchIcon} />
-              <input
-                type="text"
-                placeholder="Cari nomor pesanan, cabang, atau menu..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  ...styles.searchInput,
-                  ...(searchFocus ? styles.searchInputFocus : {})
-                }}
-                onFocus={() => setSearchFocus(true)}
-                onBlur={() => setSearchFocus(false)}
-              />
-            </div>
-
-            {/* Status Filters */}
-            <div style={styles.statusFilters} className="status-filters">
+            <div style={styles.statusFilters}>
               {statusOptions.map(status => (
                 <button
                   key={status.id}
@@ -536,119 +562,168 @@ const OrderHistoryPage = () => {
         {/* Order List */}
         {error ? (
           <div style={styles.emptyState}>
-            <XCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
-            <p>{error}</p>
-            <button onClick={fetchOrderHistory} style={styles.actionButton}>
-              Coba Lagi
+            <div style={styles.emptyIcon}>📝</div>
+            <h3 style={{ color: '#374151', marginBottom: '0.5rem' }}>Terjadi Kesalahan</h3>
+            <p style={{ color: '#64748b', marginBottom: '2rem' }}>{error}</p>
+            <button 
+              onClick={fetchOrderHistory}
+              style={{
+                ...styles.actionButton,
+                ...styles.actionButtonPrimary
+              }}
+            >
+              <RefreshCw size={16} />
+              Muat Ulang
             </button>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div style={styles.emptyState}>
-            <Receipt size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
-            <p>Tidak ada pesanan ditemukan</p>
-            <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-              {selectedStatus !== 'semua' || searchTerm 
+            <div style={styles.emptyIcon}>📦</div>
+            <h3 style={{ color: '#374151', marginBottom: '0.5rem' }}>Tidak Ada Pesanan</h3>
+            <p style={{ color: '#64748b', marginBottom: '2rem' }}>
+              {selectedStatus !== 'semua' 
                 ? 'Coba ubah filter atau kata kunci pencarian'
-                : 'Mulai pesan menu favorit Anda'
+                : 'Mulai pesan menu favorit Anda untuk melihat riwayat di sini'
               }
             </p>
+            <button 
+              onClick={() => navigate('/pelanggan/menu')}
+              style={{
+                ...styles.actionButton,
+                ...styles.actionButtonPrimary
+              }}
+            >
+              <ArrowRight size={16} />
+              Pesan Sekarang
+            </button>
           </div>
         ) : (
           <div style={styles.orderList}>
-            {filteredOrders.map((order, index) => (
-              <div
-                key={order.id}
-                style={{
-                  ...styles.orderCard,
-                  ...(hoveredCard === index ? styles.orderCardHover : {})
-                }}
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {/* Order Header */}
-                <div style={styles.orderHeader} className="order-header">
-                  <div style={styles.orderInfo}>
-                    <div style={styles.orderNumber}>#{order.nomor_pesanan}</div>
-                    <div style={styles.orderDate}>
-                      <Calendar size={14} />
-                      {formatDate(order.tanggal_dibuat)}
-                    </div>
-                    <div style={styles.orderLocation}>
-                      <MapPin size={14} />
-                      {(order.cabang || '-')} • {order.tipe_pesanan === 'makan_di_tempat' ? 'Makan di tempat' : 'Bawa pulang'}
-                    </div>
-                  </div>
-                  {getStatusBadge(order.status)}
-                </div>
-
-                {/* Order Details */}
-                <div style={styles.orderDetails} className="order-details">
-                  <div style={styles.detailItem}>
-                    <CreditCard style={styles.detailIcon} />
-                    {(order.metode_pembayaran || '-').toString().toUpperCase()}
-                  </div>
-                  <div style={styles.detailItem}>
-                    <Package style={styles.detailIcon} />
-                    {(order.items || []).length} item
-                  </div>
-                </div>
-
-                {/* Items List */}
-                <div style={styles.itemsList}>
-                  <div style={styles.itemsHeader}>
-                    <ChefHat size={16} />
-                    Menu yang dipesan
-                  </div>
-                  {(order.items || []).map((item, itemIndex) => (
-                    <div 
-                      key={itemIndex} 
-                      style={{
-                        ...styles.menuItem,
-                        ...(itemIndex === (order.items || []).length - 1 ? styles.menuItemLast : {})
-                      }}
-                    >
-                      <div style={styles.menuItemInfo}>
-                        <div style={styles.menuItemName}>{item.nama_menu}</div>
-                        <div style={styles.menuItemDetails}>
-                          {item.jumlah}x • {formatPrice(item.harga_satuan)}
+            {filteredOrders.map((order, index) => {
+              const isExpanded = expandedOrders.has(order.id);
+              
+              return (
+                <div
+                  key={order.id}
+                  style={{
+                    ...styles.orderCard,
+                    ...(hoveredCard === index && styles.orderCardHover)
+                  }}
+                  onMouseEnter={() => setHoveredCard(index)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  {/* Order Header */}
+                  <div style={styles.orderHeader} className="order-header">
+                    <div style={styles.orderMainInfo}>
+                      <div style={styles.orderNumber}>
+                        <Receipt size={20} />
+                        #{order.nomor_pesanan}
+                      </div>
+                      <div style={styles.orderMeta}>
+                        <div style={styles.orderMetaItem}>
+                          <Calendar size={16} />
+                          {formatDate(order.tanggal_dibuat)}
+                        </div>
+                        <div style={styles.orderMetaItem}>
+                          <Store size={16} />
+                          {order.cabang || '-'}
+                        </div>
+                        <div style={styles.orderMetaItem}>
+                          <User size={16} />
+                          {order.tipe_pesanan === 'makan_di_tempat' ? 'Makan di Tempat' : 'Bawa Pulang'}
+                        </div>
+                        <div style={styles.orderMetaItem}>
+                          <CreditCard size={16} />
+                          {(order.metode_pembayaran || '-').toString().toUpperCase()}
                         </div>
                       </div>
-                      <div style={styles.menuItemPrice}>
-                        {formatPrice(Number(item.harga_satuan || 0) * Number(item.jumlah || 0))}
+                    </div>
+                    <div style={styles.statusSection}>
+                      {getStatusBadge(order.status)}
+                      <div style={styles.totalAmount}>
+                        {formatPrice(order.total_harga)}
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Order Footer */}
-                <div style={styles.orderFooter} className="order-footer">
-                  <div style={styles.totalPrice}>
-                    Total: {formatPrice(order.total_harga)}
                   </div>
-                  <div style={styles.orderActions} className="order-actions">
-                    <button
-                      style={styles.actionButton}
-                      onClick={() => handleViewDetail(order.id)}
+
+                  {/* Order Details */}
+                  <div style={styles.orderDetails}>
+                    <div 
+                      style={styles.detailsHeader}
+                      onClick={() => toggleOrderDetails(order.id)}
                     >
-                      <Eye size={16} />
-                      Detail
-                    </button>
-                    {order.status === 'selesai' && (
+                      <div style={styles.detailsTitle}>
+                        <Package size={18} />
+                        Detail Pesanan ({(order.items || []).length} item)
+                      </div>
+                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </div>
+                    
+                    {isExpanded && (
+                      <div style={styles.itemsGrid}>
+                        {(order.items || []).map((item, itemIndex) => (
+                          <div 
+                            key={itemIndex}
+                            style={{
+                              ...styles.menuItem,
+                              ...(hoveredItem === `${order.id}-${itemIndex}` && styles.menuItemHover)
+                            }}
+                            onMouseEnter={() => setHoveredItem(`${order.id}-${itemIndex}`)}
+                            onMouseLeave={() => setHoveredItem(null)}
+                          >
+                            <div style={styles.menuItemInfo}>
+                              <div style={styles.menuItemName}>{item.nama_menu}</div>
+                              <div style={styles.menuItemDetails}>
+                                <span>{item.jumlah}x</span>
+                                <span>•</span>
+                                <span>{formatPrice(item.harga_satuan)}</span>
+                              </div>
+                            </div>
+                            <div style={styles.menuItemPrice}>
+                              {formatPrice(Number(item.harga_satuan || 0) * Number(item.jumlah || 0))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Order Footer */}
+                  <div style={styles.orderFooter} className="order-footer">
+                    <div style={styles.orderActions} className="order-actions">
                       <button
                         style={{
                           ...styles.actionButton,
-                          ...styles.actionButtonPrimary
+                          ...(hoveredAction[`detail-${order.id}`] && styles.actionButtonHover)
                         }}
-                        onClick={() => handleReorder(order)}
+                        onClick={() => handleViewDetail(order.id)}
+                        onMouseEnter={() => setHoveredAction(prev => ({ ...prev, [`detail-${order.id}`]: true }))}
+                        onMouseLeave={() => setHoveredAction(prev => ({ ...prev, [`detail-${order.id}`]: false }))}
                       >
-                        <RefreshCw size={16} />
-                        Pesan Lagi
+                        <Eye size={16} />
+                        Lihat Detail
                       </button>
-                    )}
+                      
+                      {order.status === 'selesai' && (
+                        <button
+                          style={{
+                            ...styles.actionButton,
+                            ...styles.actionButtonPrimary,
+                            ...(hoveredAction[`reorder-${order.id}`] && styles.actionButtonHover)
+                          }}
+                          onClick={() => handleReorder(order)}
+                          onMouseEnter={() => setHoveredAction(prev => ({ ...prev, [`reorder-${order.id}`]: true }))}
+                          onMouseLeave={() => setHoveredAction(prev => ({ ...prev, [`reorder-${order.id}`]: false }))}
+                        >
+                          <RefreshCw size={16} />
+                          Pesan Lagi
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

@@ -1,14 +1,19 @@
-// backend/routes/penggunaRoutes.js
-const express = require('express');
-const { getAllPengguna, updatePenggunaByAdmin, updateProfilSaya, createPenggunaByAdmin } = require('../controllers/penggunaController');
+const router = require('express').Router();
+const Model = require('../models/penggunaModel'); // expose: findAll, findByEmail, updateAdmin, updateProfile, create
+const bcrypt = require('bcryptjs');
+const { Pengguna } = require('../controllers/Pengguna');
 const { protect, checkRole } = require('../middleware/authMiddleware');
-const router = express.Router();
 
-router.put('/me', protect, checkRole(['pelanggan']), updateProfilSaya);
+const ctrl = new Pengguna({ repo: Model, bcrypt });
 
-// Hanya admin yang bisa mengakses data pengguna
-router.get('/', protect, checkRole(['admin']), getAllPengguna);
-router.put('/:id', protect, checkRole(['admin', 'staff']), updatePenggunaByAdmin);
-router.post('/', protect, checkRole(['admin']), createPenggunaByAdmin); 
+// pelanggan update profil sendiri
+router.put('/me', protect, checkRole(['pelanggan']), ctrl.updateMe);
+
+// admin area
+router.get('/', protect, checkRole(['admin']), ctrl.semua);
+router.post('/', protect, checkRole(['admin']), ctrl.createByAdmin);
+
+// admin/staff update user lain
+router.put('/:id', protect, checkRole(['admin', 'staff']), ctrl.updateByAdmin);
 
 module.exports = router;

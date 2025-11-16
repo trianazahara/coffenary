@@ -623,10 +623,6 @@ const CartPage = () => {
                 <span style={styles.featureText}>Aman & Terpercaya</span>
               </div>
               <div style={styles.feature}>
-                <Truck style={styles.featureIcon} />
-                <span style={styles.featureText}>Gratis Ongkir</span>
-              </div>
-              <div style={styles.feature}>
                 <CreditCard style={styles.featureIcon} />
                 <span style={styles.featureText}>Beragam Bayar</span>
               </div>
@@ -640,15 +636,12 @@ const CartPage = () => {
               <span style={styles.summaryLabel}>Biaya Layanan</span>
               <span style={styles.summaryValue}>Gratis</span>
             </div>
-            <div style={styles.summaryRow}>
-              <span style={styles.summaryLabel}>PPN (10%)</span>
-              <span style={styles.summaryValue}>{formatPrice(subtotal * 0.1)}</span>
-            </div>
+            
 
             <div style={styles.summaryTotal}>
               <span style={styles.totalLabel}>Total Pembayaran</span>
               <span style={styles.totalValue}>
-                {formatPrice(subtotal + subtotal)}
+                {formatPrice( subtotal)}
               </span>
             </div>
 

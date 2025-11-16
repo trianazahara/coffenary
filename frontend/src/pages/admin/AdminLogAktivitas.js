@@ -1,15 +1,67 @@
 import React, { useEffect, useState } from "react";
-import { History } from "lucide-react";
+import { History, Search } from "lucide-react";
 
 const AdminLogAktivitas = () => {
   const [logs, setLogs] = useState([]);
+  const [filteredLogs, setFilteredLogs] = useState([]); // 🔍 hasil pencarian
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetch("http://localhost:5000/api/logs")
-      .then((res) => res.json())
-      .then((data) => setLogs(data))
-      .catch((err) => console.error("Error fetch logs:", err));
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        // Pastikan data adalah array
+        let logsData = [];
+        if (Array.isArray(data)) {
+          logsData = data;
+        } else if (data.logs && Array.isArray(data.logs)) {
+          logsData = data.logs;
+        } else if (data.data && Array.isArray(data.data)) {
+          logsData = data.data;
+        } else {
+          console.error("Format data tidak sesuai:", data);
+          logsData = [];
+        }
+
+        // Sort logs
+        const sortedLogs = logsData.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+        setLogs(sortedLogs);
+        setFilteredLogs(sortedLogs);
+      })
+      .catch((err) => {
+        console.error("Error fetch logs:", err);
+        setLogs([]);
+        setFilteredLogs([]);
+      });
   }, []);
+
+  // 🔍 Logika search — jalan setiap kali user mengetik
+  useEffect(() => {
+    if (searchTerm.trim().length < 2) {
+      // jika input kurang dari 2 karakter → tampilkan semua log
+      setFilteredLogs(logs);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+
+    const filtered = logs.filter((log) => {
+      // cocokkan berdasarkan aktivitas, admin, waktu, atau nomor
+      return (
+        String(log.aktivitas).toLowerCase().includes(term) ||
+        String(log.admin).toLowerCase().includes(term) ||
+        String(log.waktu).toLowerCase().includes(term) ||
+        String(log.id).toLowerCase().includes(term)
+      );
+    });
+
+    setFilteredLogs(filtered);
+  }, [searchTerm, logs]);
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -23,6 +75,37 @@ const AdminLogAktivitas = () => {
         Riwayat aktivitas yang dilakukan admin
       </p>
 
+      {/* 🔍 Search bar */}
+      <div
+        style={{
+          marginBottom: "1rem",
+          display: "flex",
+          alignItems: "center",
+          backgroundColor: "white",
+          borderRadius: "8px",
+          border: "1px solid #d1d5db",
+          padding: "0.5rem 1rem",
+          maxWidth: "400px",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+        }}
+      >
+        <Search size={20} color="#6b7280" />
+        <input
+          type="text"
+          placeholder="Cari aktivitas, admin, waktu, atau nomor..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            border: "none",
+            outline: "none",
+            marginLeft: "0.5rem",
+            flex: 1,
+            fontSize: "0.9rem",
+            color: "#374151",
+          }}
+        />
+      </div>
+
       <div
         style={{
           overflowX: "auto",
@@ -34,26 +117,34 @@ const AdminLogAktivitas = () => {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead style={{ backgroundColor: "#f0fdf4" }}>
             <tr>
-              <th style={thStyle}>No</th>
+              <th style={thStyle}>Nomor</th>
               <th style={thStyle}>Aktivitas</th>
               <th style={thStyle}>Admin</th>
               <th style={thStyle}>Waktu</th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, index) => (
-              <tr
-                key={log.id}
-                style={{
-                  backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9fafb",
-                }}
-              >
-                <td style={tdStyle}>{log.id}</td>
-                <td style={tdStyle}>{log.aktivitas}</td>
-                <td style={tdStyle}>{log.admin}</td>
-                <td style={tdStyle}>{log.waktu}</td>
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log, index) => (
+                <tr
+                  key={`${log.id}-${index}`}
+                  style={{
+                    backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9fafb",
+                  }}
+                >
+                  <td style={tdStyle}>{index + 1}</td>
+                  <td style={tdStyle}>{log.aktivitas}</td>
+                  <td style={tdStyle}>{log.admin}</td>
+                  <td style={tdStyle}>{log.waktu}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" style={{ ...tdStyle, textAlign: "center", color: "#6b7280" }}>
+                  Tidak ada hasil ditemukan
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

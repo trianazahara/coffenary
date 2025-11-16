@@ -2,37 +2,335 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, Phone, User, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Phone, User, Eye, EyeOff, CheckCircle, AlertCircle, Coffee } from 'lucide-react';
 
+// Enhanced styling with coffee-themed animations matching login page
 const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f8fafc', paddingTop: 70 },
-  main: { maxWidth: 480, margin: '0 auto', padding: '2rem 1rem' },
+  container: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    width: '100vw',
+    margin: 0,
+    padding: 0,
+    background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 30%, #6ee7b7 60%, #34d399 100%)',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    overflow: 'hidden'
+  },
+  floatingElements: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
+    zIndex: 1
+  },
+  coffeeBubble: {
+    position: 'absolute',
+    borderRadius: '50%',
+    background: 'rgba(255, 255, 255, 0.4)',
+    animation: 'bubbleFloat 12s ease-in-out infinite',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.6)'
+  },
+  coffeeBean: {
+    position: 'absolute',
+    width: '20px',
+    height: '30px',
+    background: '#8b4513',
+    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+    animation: 'beanRotate 20s linear infinite',
+    opacity: 0.2
+  },
+  coffeeSteam: {
+    position: 'absolute',
+    width: '4px',
+    height: '60px',
+    background: 'linear-gradient(to top, rgba(255, 255, 255, 0.8), transparent)',
+    borderRadius: '2px',
+    animation: 'steamRise 4s ease-in-out infinite'
+  },
   card: {
-    background: '#fff',
-    borderRadius: '1rem',
-    padding: '2rem',
-    boxShadow: '0 4px 15px rgba(0,0,0,.08)',
-    border: '1px solid rgba(226,232,240,.5)',
+    width: '100%',
+    maxWidth: '420px',
+    padding: '2rem 2rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(15px)',
+    borderRadius: '1.2rem',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.2)',
+    position: 'relative',
+    zIndex: 10,
+    animation: 'cardEntrance 1s ease-out',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    margin: '1rem'
   },
-  title: { fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', gap: 8, alignItems: 'center' },
-  subtitle: { color: '#64748b', marginTop: 6 },
-  field: { marginTop: 14 },
-  label: { display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 6 },
-  inputWrap: { position: 'relative' },
+  header: {
+    textAlign: 'center',
+    marginBottom: '2rem',
+    animation: 'slideDown 1.2s ease-out'
+  },
+  logoContainer: {
+    position: 'relative',
+    display: 'inline-block',
+    marginBottom: '0.8rem'
+  },
+  logo: {
+    width: '3.5rem',
+    height: '3.5rem',
+    color: '#059669',
+    animation: 'logoFloat 3s ease-in-out infinite',
+    filter: 'drop-shadow(0 4px 8px rgba(5, 150, 105, 0.3))'
+  },
+  logoGlow: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '4.5rem',
+    height: '4.5rem',
+    background: 'radial-gradient(circle, rgba(5, 150, 105, 0.15) 0%, transparent 70%)',
+    borderRadius: '50%',
+    animation: 'glowPulse 2.5s ease-in-out infinite'
+  },
+  title: {
+    fontSize: '1.8rem',
+    fontWeight: '800',
+    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    backgroundClip: 'text',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    letterSpacing: '1.5px',
+    marginBottom: '0.3rem'
+  },
+  subtitle: {
+    color: '#6b7280',
+    fontSize: '0.9rem',
+    fontWeight: '500'
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.2rem'
+  },
+  inputContainer: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.75rem',
+    padding: '0.9rem 1rem',
+    transition: 'all 0.25s ease',
+    animation: 'slideUp 1.4s ease-out'
+  },
+  inputContainerFocus: {
+    borderColor: '#10b981',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)',
+    transform: 'translateY(-1px)'
+  },
+  inputIcon: {
+    marginRight: '0.8rem',
+    color: '#94a3b8',
+    transition: 'color 0.25s ease'
+  },
+  inputIconFocus: {
+    color: '#10b981'
+  },
   input: {
-    width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: 12,
-    border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none',
+    flex: 1,
+    border: 'none',
+    outline: 'none',
+    backgroundColor: 'transparent',
+    fontSize: '0.95rem',
+    color: '#1e293b',
+    fontWeight: '500',
+    WebkitBoxShadow: '0 0 0 1000px transparent inset',
+    WebkitTextFillColor: '#1e293b'
   },
-  icon: { position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' },
-  eyeBtn: { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 0, cursor: 'pointer' },
-  btn: {
-    width: '100%', marginTop: 16, padding: '0.85rem 1rem', border: 0, borderRadius: 12,
-    background: '#10b981', color: '#fff', fontWeight: 700, cursor: 'pointer',
+  eyeButton: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#94a3b8',
+    padding: '0.25rem',
+    borderRadius: '0.25rem',
+    transition: 'color 0.25s ease'
   },
-  muted: { fontSize: 14, color: '#64748b', marginTop: 12, textAlign: 'center' },
-  error: { display:'flex', gap:8, alignItems:'center', background:'#fef2f2', color:'#dc2626', border:'1px solid #fecaca', padding:12, borderRadius:10, marginTop:12 },
-  ok: { display:'flex', gap:8, alignItems:'center', background:'#f0fdf4', color:'#16a34a', border:'1px solid #bbf7d0', padding:12, borderRadius:10, marginTop:12 },
+  button: {
+    width: '100%',
+    padding: '1rem',
+    fontWeight: '600',
+    fontSize: '1rem',
+    color: 'white',
+    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    borderRadius: '0.75rem',
+    border: 'none',
+    cursor: 'pointer',
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'all 0.25s ease',
+    boxShadow: '0 6px 20px rgba(5, 150, 105, 0.25)',
+    animation: 'slideUp 1.6s ease-out'
+  },
+  buttonHover: {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 25px rgba(5, 150, 105, 0.35)'
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+    cursor: 'not-allowed',
+    transform: 'none'
+  },
+  messageContainer: {
+    padding: '0.8rem 1rem',
+    borderRadius: '0.75rem',
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    animation: 'slideUp 1s ease-out'
+  },
+  errorMessage: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    color: '#dc2626',
+    border: '1px solid rgba(239, 68, 68, 0.2)'
+  },
+  successMessage: {
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    color: '#059669',
+    border: '1px solid rgba(16, 185, 129, 0.2)'
+  },
+  loginContainer: {
+    marginTop: '1.25rem',
+    textAlign: 'center',
+    fontSize: '0.875rem',
+    color: '#6b7280',
+    animation: 'slideUp 1.8s ease-out'
+  },
+  link: {
+    color: '#059669',
+    fontWeight: '600',
+    textDecoration: 'none',
+    transition: 'color 0.2s'
+  },
+  linkHover: {
+    color: '#047857'
+  }
 };
+
+// Add CSS animations
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @keyframes bubbleFloat {
+    0% { 
+      transform: translateY(100vh) scale(0); 
+      opacity: 0; 
+    }
+    10% { 
+      opacity: 1; 
+    }
+    90% { 
+      opacity: 1; 
+    }
+    100% { 
+      transform: translateY(-100px) scale(1); 
+      opacity: 0; 
+    }
+  }
+  
+  @keyframes beanRotate {
+    0% { transform: rotate(0deg) translateY(100vh); }
+    100% { transform: rotate(360deg) translateY(-50px); }
+  }
+  
+  @keyframes steamRise {
+    0% { 
+      opacity: 0.8; 
+      transform: translateY(0) scale(1); 
+    }
+    50% { 
+      opacity: 0.4; 
+      transform: translateY(-30px) scale(1.2); 
+    }
+    100% { 
+      opacity: 0; 
+      transform: translateY(-60px) scale(0.8); 
+    }
+  }
+  
+  @keyframes cardEntrance {
+    0% { 
+      opacity: 0; 
+      transform: translateY(30px) scale(0.95); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: translateY(0) scale(1); 
+    }
+  }
+  
+  @keyframes slideDown {
+    0% { 
+      opacity: 0; 
+      transform: translateY(-20px); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+  
+  @keyframes slideUp {
+    0% { 
+      opacity: 0; 
+      transform: translateY(20px); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+  
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-5px) rotate(5deg); }
+  }
+  
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); }
+  }
+  
+  @keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+  
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #f8fafc inset !important;
+    -webkit-text-fill-color: #1e293b !important;
+    box-shadow: 0 0 0 30px #f8fafc inset !important;
+  }
+
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+    box-shadow: 0 0 0 30px #ffffff inset !important;
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -49,8 +347,18 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [msgErr, setMsgErr] = useState('');
   const [msgOk, setMsgOk] = useState('');
+  const [focusedInput, setFocusedInput] = useState(null);
+  const [buttonHover, setButtonHover] = useState(false);
 
   const onChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleInputFocus = (inputName) => {
+    setFocusedInput(inputName);
+  };
+
+  const handleInputBlur = () => {
+    setFocusedInput(null);
+  };
 
   const validate = () => {
     if (!form.username || !form.nama_lengkap || !form.email || !form.password) return 'Semua field wajib diisi (telepon opsional).';
@@ -58,13 +366,17 @@ export default function RegisterPage() {
     if (form.password.length < 6) return 'Password minimal 6 karakter.';
     if (form.password !== form.confirm) return 'Konfirmasi password tidak cocok.';
     return null;
-    };
+  };
 
   const submit = async (e) => {
     e.preventDefault();
-    setMsgErr(''); setMsgOk('');
+    setMsgErr(''); 
+    setMsgOk('');
     const v = validate();
-    if (v) { setMsgErr(v); return; }
+    if (v) { 
+      setMsgErr(v); 
+      return; 
+    }
 
     try {
       setLoading(true);
@@ -77,7 +389,6 @@ export default function RegisterPage() {
       });
 
       setMsgOk('Registrasi berhasil! Silakan masuk.');
-      // Redirect kecil setelah beberapa detik
       setTimeout(() => navigate('/'), 1200);
     } catch (err) {
       setMsgErr(err.response?.data?.message || 'Registrasi gagal. Coba lagi.');
@@ -86,118 +397,271 @@ export default function RegisterPage() {
     }
   };
 
+  // Create coffee-themed floating elements
+  const bubbles = Array.from({ length: 8 }, (_, i) => (
+    <div
+      key={`bubble-${i}`}
+      style={{
+        ...styles.coffeeBubble,
+        width: `${Math.random() * 40 + 20}px`,
+        height: `${Math.random() * 40 + 20}px`,
+        left: `${Math.random() * 100}%`,
+        animationDelay: `${Math.random() * 8}s`,
+        animationDuration: `${8 + Math.random() * 6}s`
+      }}
+    />
+  ));
+
+  const beans = Array.from({ length: 5 }, (_, i) => (
+    <div
+      key={`bean-${i}`}
+      style={{
+        ...styles.coffeeBean,
+        left: `${Math.random() * 100}%`,
+        animationDelay: `${Math.random() * 15}s`,
+        animationDuration: `${15 + Math.random() * 10}s`
+      }}
+    />
+  ));
+
+  const steam = Array.from({ length: 6 }, (_, i) => (
+    <div
+      key={`steam-${i}`}
+      style={{
+        ...styles.coffeeSteam,
+        left: `${20 + Math.random() * 60}%`,
+        bottom: `${Math.random() * 30}%`,
+        animationDelay: `${Math.random() * 3}s`
+      }}
+    />
+  ));
+
   return (
     <div style={styles.container}>
-
-      <main style={styles.main}>
-        <div style={styles.card}>
-          <h1 style={styles.title}><UserPlus size={24} /> Buat Akun</h1>
-          <p style={styles.subtitle}>Daftar sebagai pelanggan Coffenary</p>
-
-          {msgErr && <div style={styles.error}><AlertCircle size={18} />{msgErr}</div>}
-          {msgOk && <div style={styles.ok}><CheckCircle size={18} />{msgOk}</div>}
-
-          <form onSubmit={submit}>
-            <div style={styles.field}>
-              <label style={styles.label}>Nama Lengkap</label>
-              <div style={styles.inputWrap}>
-                <User size={18} style={styles.icon} />
-                <input
-                  style={styles.input}
-                  name="nama_lengkap"
-                  value={form.nama_lengkap}
-                  onChange={onChange}
-                  placeholder="Budi Budiman"
-                />
-              </div>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Username</label>
-              <div style={styles.inputWrap}>
-                <User size={18} style={styles.icon} />
-                <input
-                  style={styles.input}
-                  name="username"
-                  value={form.username}
-                  onChange={onChange}
-                  placeholder="budi123"
-                />
-              </div>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Email</label>
-              <div style={styles.inputWrap}>
-                <Mail size={18} style={styles.icon} />
-                <input
-                  style={styles.input}
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={onChange}
-                  placeholder="nama@email.com"
-                />
-              </div>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Telepon (opsional)</label>
-              <div style={styles.inputWrap}>
-                <Phone size={18} style={styles.icon} />
-                <input
-                  style={styles.input}
-                  name="telepon"
-                  value={form.telepon}
-                  onChange={onChange}
-                  placeholder="08xxxxxxxxxx"
-                />
-              </div>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Password</label>
-              <div style={styles.inputWrap}>
-                <Lock size={18} style={styles.icon} />
-                <input
-                  style={styles.input}
-                  name="password"
-                  type={showPass ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={onChange}
-                  placeholder="Minimal 6 karakter"
-                />
-                <button type="button" style={styles.eyeBtn} onClick={() => setShowPass(s => !s)}>
-                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Konfirmasi Password</label>
-              <div style={styles.inputWrap}>
-                <Lock size={18} style={styles.icon} />
-                <input
-                  style={styles.input}
-                  name="confirm"
-                  type={showPass ? 'text' : 'password'}
-                  value={form.confirm}
-                  onChange={onChange}
-                  placeholder="Ulangi password"
-                />
-              </div>
-            </div>
-
-            <button disabled={loading} style={styles.btn} type="submit">
-              {loading ? 'Memproses...' : 'Daftar'}
-            </button>
-
-            <p style={styles.muted}>
-              Sudah punya akun? <Link to="/">Masuk</Link>
-            </p>
-          </form>
+      <div style={styles.floatingElements}>
+        {bubbles}
+        {beans}
+        {steam}
+      </div>
+      
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <div style={styles.logoContainer}>
+            <div style={styles.logoGlow}></div>
+            <Coffee style={styles.logo} />
+          </div>
+          <h1 style={styles.title}>COFFENARY</h1>
+          <p style={styles.subtitle}>Buat Akun Baru</p>
         </div>
-      </main>
+
+        {msgErr && (
+          <div style={{...styles.messageContainer, ...styles.errorMessage}}>
+            <AlertCircle size={18} />
+            {msgErr}
+          </div>
+        )}
+        {msgOk && (
+          <div style={{...styles.messageContainer, ...styles.successMessage}}>
+            <CheckCircle size={18} />
+            {msgOk}
+          </div>
+        )}
+
+        <form style={styles.form} onSubmit={submit}>
+          {/* Nama Lengkap */}
+          <div 
+            style={{
+              ...styles.inputContainer,
+              ...(focusedInput === 'nama_lengkap' ? styles.inputContainerFocus : {})
+            }}
+          >
+            <User 
+              size={18} 
+              style={{
+                ...styles.inputIcon,
+                ...(focusedInput === 'nama_lengkap' ? styles.inputIconFocus : {})
+              }} 
+            />
+            <input
+              name="nama_lengkap"
+              value={form.nama_lengkap}
+              onChange={onChange}
+              placeholder="Nama Lengkap"
+              onFocus={() => handleInputFocus('nama_lengkap')}
+              onBlur={handleInputBlur}
+              style={styles.input}
+              required
+            />
+          </div>
+
+          {/* Username */}
+          <div 
+            style={{
+              ...styles.inputContainer,
+              ...(focusedInput === 'username' ? styles.inputContainerFocus : {})
+            }}
+          >
+            <User 
+              size={18} 
+              style={{
+                ...styles.inputIcon,
+                ...(focusedInput === 'username' ? styles.inputIconFocus : {})
+              }} 
+            />
+            <input
+              name="username"
+              value={form.username}
+              onChange={onChange}
+              placeholder="Username"
+              onFocus={() => handleInputFocus('username')}
+              onBlur={handleInputBlur}
+              style={styles.input}
+              required
+            />
+          </div>
+
+          {/* Email */}
+          <div 
+            style={{
+              ...styles.inputContainer,
+              ...(focusedInput === 'email' ? styles.inputContainerFocus : {})
+            }}
+          >
+            <Mail 
+              size={18} 
+              style={{
+                ...styles.inputIcon,
+                ...(focusedInput === 'email' ? styles.inputIconFocus : {})
+              }} 
+            />
+            <input
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={onChange}
+              placeholder="nama@email.com"
+              onFocus={() => handleInputFocus('email')}
+              onBlur={handleInputBlur}
+              style={styles.input}
+              required
+            />
+          </div>
+
+          {/* Telepon */}
+          <div 
+            style={{
+              ...styles.inputContainer,
+              ...(focusedInput === 'telepon' ? styles.inputContainerFocus : {})
+            }}
+          >
+            <Phone 
+              size={18} 
+              style={{
+                ...styles.inputIcon,
+                ...(focusedInput === 'telepon' ? styles.inputIconFocus : {})
+              }} 
+            />
+            <input
+              name="telepon"
+              value={form.telepon}
+              onChange={onChange}
+              placeholder="08xxxxxxxxxx (opsional)"
+              onFocus={() => handleInputFocus('telepon')}
+              onBlur={handleInputBlur}
+              style={styles.input}
+            />
+          </div>
+
+          {/* Password */}
+          <div 
+            style={{
+              ...styles.inputContainer,
+              ...(focusedInput === 'password' ? styles.inputContainerFocus : {})
+            }}
+          >
+            <Lock 
+              size={18} 
+              style={{
+                ...styles.inputIcon,
+                ...(focusedInput === 'password' ? styles.inputIconFocus : {})
+              }} 
+            />
+            <input
+              name="password"
+              type={showPass ? 'text' : 'password'}
+              value={form.password}
+              onChange={onChange}
+              placeholder="Minimal 6 karakter"
+              onFocus={() => handleInputFocus('password')}
+              onBlur={handleInputBlur}
+              style={styles.input}
+              required
+            />
+            <button 
+              type="button" 
+              style={styles.eyeButton}
+              onClick={() => setShowPass(s => !s)}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#10b981'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+            >
+              {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          {/* Konfirmasi Password */}
+          <div 
+            style={{
+              ...styles.inputContainer,
+              ...(focusedInput === 'confirm' ? styles.inputContainerFocus : {})
+            }}
+          >
+            <Lock 
+              size={18} 
+              style={{
+                ...styles.inputIcon,
+                ...(focusedInput === 'confirm' ? styles.inputIconFocus : {})
+              }} 
+            />
+            <input
+              name="confirm"
+              type={showPass ? 'text' : 'password'}
+              value={form.confirm}
+              onChange={onChange}
+              placeholder="Ulangi password"
+              onFocus={() => handleInputFocus('confirm')}
+              onBlur={handleInputBlur}
+              style={styles.input}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...styles.button,
+              ...(buttonHover ? styles.buttonHover : {}),
+              ...(loading ? styles.buttonDisabled : {})
+            }}
+            onMouseEnter={() => !loading && setButtonHover(true)}
+            onMouseLeave={() => setButtonHover(false)}
+          >
+            {loading ? 'Memproses...' : 'Daftar'}
+          </button>
+        </form>
+
+        <div style={styles.loginContainer}>
+          <span>Sudah punya akun? </span>
+          <Link 
+            to="/" 
+            style={styles.link}
+            onMouseEnter={(e) => e.currentTarget.style.color = styles.linkHover.color}
+            onMouseLeave={(e) => e.currentTarget.style.color = styles.link.color}
+          >
+            Masuk
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

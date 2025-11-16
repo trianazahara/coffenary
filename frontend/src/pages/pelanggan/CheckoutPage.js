@@ -744,10 +744,6 @@ const CheckoutPage = ({ onSuccess }) => {
                 <span style={styles.priceLabel}>Subtotal ({getTotalItems()} item)</span>
                 <span style={styles.priceValue}>{formatPrice(subtotal)}</span>
               </div>
-              <div style={styles.priceRow}>
-                <span style={styles.priceLabel}>PPN (10%)</span>
-                <span style={styles.priceValue}>{formatPrice(tax)}</span>
-              </div>
               <div style={styles.totalRow}>
                 <span style={styles.totalLabel}>Total Pembayaran</span>
                 <span style={styles.totalValue}>{formatPrice(total)}</span>

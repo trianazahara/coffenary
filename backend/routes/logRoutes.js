@@ -1,15 +1,11 @@
-const express = require("express");
-const router = express.Router();
-const LogModel = require("../models/logModel");
+// routes/logRoutes.js
+const router = require('express').Router();
+const { Log } = require('../controllers/Log');
+const LogModel = require('../models/logModel');
+const { protect, checkRole } = require('../middleware/authMiddleware');
 
-// Ambil semua log
-router.get("/", (req, res) => {
-  try {
-    const logs = LogModel.getLogs();
-    res.json(logs);
-  } catch (error) {
-    res.status(500).json({ message: "Gagal mengambil log" });
-  }
-});
+const log = new Log({ LogModel });
+
+router.get('/', protect, checkRole(['admin']), log.semua);
 
 module.exports = router;

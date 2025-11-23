@@ -1,4 +1,4 @@
-const { Pesanan } = require('../../controllers/Pesanan');
+const { PesananController: Pesanan } = require('../../controllers/PesananController');
 
 function mkRes() {
   return {
@@ -20,6 +20,8 @@ function mkConn() {
 
 describe('Pesanan Controller (single-file unit tests)', () => {
   const FIXED_NOW = 1700000000000;
+  const originalWarn = console.warn;
+  afterAll(() => { console.warn = originalWarn; });
 
   // ===== checkout =====
   describe('checkout', () => {
@@ -127,7 +129,7 @@ describe('Pesanan Controller (single-file unit tests)', () => {
         conn,
         expect.objectContaining({
           nomor_pesanan: `ORD-${FIXED_NOW}`,
-          id_pengguna: 10, id_cabang: 20, tipe_pesanan: 'dine-in', id_meja: 5, total: 35000
+          id_pengguna: 10, id_cabang: 20, tipe_pesanan: 'dine-in', total: 35000
         })
       );
       expect(repo.tambahItemPesanan).toHaveBeenCalledTimes(2);
@@ -211,6 +213,55 @@ describe('Pesanan Controller (single-file unit tests)', () => {
       expect(res.body.subtotal).toBe(0);
       expect(res.body.total_harga).toBe(0);
     });
+    test('checkout: body undefined → destructuring fallback {}, return 400', async () => {
+      const repo = { koneksi: jest.fn().mockResolvedValue(mkConn()) };
+      const ctrl = new Pesanan({ repo, snap: {}, now: () => FIXED_NOW });
+
+      const res = mkRes();
+      // sengaja tidak mengirim req.body agar ekspresi `req.body || {}` dievaluasi
+      await ctrl.checkout({}, res, mkNext());
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toEqual({ message: 'Data checkout tidak lengkap' });
+    });
+  });
+
+  test('ubahStatus mencatat log saat sukses', async () => {
+    const repo = { ubahStatus: jest.fn().mockResolvedValue({ affectedRows: 1 }) };
+    const LogModel = { addLog: jest.fn().mockResolvedValue() };
+    const ctrl = new Pesanan({ repo, snap: {}, LogModel, now: () => FIXED_NOW });
+
+    const res = mkRes();
+    await ctrl.ubahStatus(
+      { params: { id_pesanan: 12 }, body: { status: 'siap' }, user: { id: 7 }, get:()=>'' },
+      res,
+      mkNext()
+    );
+    expect(LogModel.addLog).toHaveBeenCalledWith(expect.objectContaining({
+      entitas: 'pesanan',
+      entitas_id: 12,
+      aksi: 'status_change'
+    }));
+    expect(res.body).toEqual({ message: 'Status pesanan berhasil diubah menjadi siap' });
+  });
+
+  test('ubahStatus 404 jika tidak ditemukan', async () => {
+    const repo = { ubahStatus: jest.fn().mockResolvedValue({ affectedRows: 0 }) };
+    const ctrl = new Pesanan({ repo, snap: {}, now: () => FIXED_NOW });
+    const res = mkRes();
+    await ctrl.ubahStatus({ params: { id_pesanan: 1 }, body: { status: 'x' } }, res, mkNext());
+    expect(res.statusCode).toBe(404);
+  });
+
+  test('ubahStatus log gagal tetap 200', async () => {
+    const repo = { ubahStatus: jest.fn().mockResolvedValue({ affectedRows: 1 }) };
+    const LogModel = { addLog: jest.fn().mockRejectedValue(new Error('log fail')) };
+    const ctrl = new Pesanan({ repo, snap: {}, LogModel, now: () => FIXED_NOW });
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const res = mkRes();
+    await ctrl.ubahStatus({ params:{ id_pesanan: 3 }, body:{ status:'done' }, user:{ id:1 }, get:()=>'' }, res, mkNext());
+    expect(res.statusCode).toBe(200);
+    warnSpy.mockRestore();
   });
 
   // ===== semuaByCabang =====
@@ -371,6 +422,27 @@ describe('Pesanan Controller (single-file unit tests)', () => {
       const ctrl = new Pesanan({ repo, snap: {}, now: () => FIXED_NOW });
 
       await ctrl.riwayatPengguna({ user: { id: 1 } }, mkRes(), mkNext());
+    });
+    test('riwayatPengguna: harga_satuan/subtotal undefined → fallback 0 (numbered)', async () => {
+      const repo = {
+        pesananByPengguna: jest.fn().mockResolvedValue([
+          { id: 9, nomor_pesanan: 'ORD-9', metode_pembayaran: null }
+        ]),
+        itemByOrderIds: jest.fn().mockResolvedValue([
+          // kirim undefined supaya `|| 0` aktif, dan cek Number() menghasilkan 0
+          { id_pesanan: 9, id_menu: 1, nama_menu: 'Latte', jumlah: 1, catatan: null, harga_satuan: undefined, subtotal: undefined }
+        ])
+      };
+      const ctrl = new Pesanan({ repo, snap: {}, now: () => FIXED_NOW });
+
+      const res = mkRes();
+      await ctrl.riwayatPengguna({ user: { id: 123 } }, res, mkNext());
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0].items[0].harga_satuan).toBe(0);
+      expect(res.body[0].items[0].subtotal).toBe(0);
+      // bonus: metode_pembayaran fallback '-'
+      expect(res.body[0].metode_pembayaran).toBe('-');
     });
   });
 

@@ -1,12 +1,12 @@
 const router = require('express').Router();
-const { Auth } = require('../controllers/Auth');
+const { AuthController } = require('../controllers/AuthController');
 
 const Pengguna = require('../models/penggunaModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const transporter = require('../config/mailer');
 
-const auth = new Auth({
+const auth = new AuthController({
   Pengguna,
   bcrypt,
   jwt,

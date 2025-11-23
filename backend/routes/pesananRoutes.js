@@ -2,13 +2,14 @@ const router = require('express').Router();
 const pool = require('../config/db');
 const midtransClient = require('midtrans-client');
 
-const { Pesanan } = require('../controllers/Pesanan');
-const PesananM  = require('../models/pesananModel');
+const { PesananController } = require('../controllers/PesananController');
+const Pesanan  = require('../models/pesananModel');
+const LogModel = require('../models/logModel');
 const { protect, checkRole } = require('../middleware/authMiddleware');
 
-const repo = new PesananM(pool);
+const repo = new Pesanan(pool);
 const snap = new midtransClient.Snap({ isProduction: false, serverKey: process.env.MIDTRANS_SERVER_KEY });
-const pesanan = new Pesanan({ repo, snap });
+const pesanan = new PesananController({ repo, snap, LogModel });
 
 // Pelanggan
 router.get('/history', protect, checkRole(['pelanggan']), pesanan.riwayatPengguna);

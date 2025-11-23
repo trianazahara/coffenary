@@ -1,40 +1,62 @@
 import React, { useEffect, useState } from "react";
 import { History, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const AdminLogAktivitas = () => {
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]); // 🔍 hasil pencarian
   const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/logs")
+    const token =
+      localStorage.getItem("adminToken") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken");
+
+    if (!token) {
+      setError("Token tidak ditemukan, silakan login ulang.");
+      return;
+    }
+
+    fetch("http://localhost:5000/api/logs", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((res) => {
+        if (res.status === 401) {
+          throw new Error("Unauthorized");
+        }
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
       })
       .then((data) => {
-        // Pastikan data adalah array
-        let logsData = [];
-        if (Array.isArray(data)) {
-          logsData = data;
-        } else if (data.logs && Array.isArray(data.logs)) {
-          logsData = data.logs;
-        } else if (data.data && Array.isArray(data.data)) {
-          logsData = data.data;
-        } else {
-          console.error("Format data tidak sesuai:", data);
-          logsData = [];
-        }
+        // backend mengembalikan { data: [...], meta: {...} }
+        const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        const normalized = rows.map((row) => ({
+          id: row.id_log,
+          aktivitas: row.keterangan || `${row.aksi} ${row.entitas}${row.entitas_id ? ` #${row.entitas_id}` : ""}`,
+          admin: row.admin_nama || `Admin ${row.id_admin}`,
+          waktu: row.tanggal_dibuat,
+          raw: row,
+        }));
 
         // Sort logs
-        const sortedLogs = logsData.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+        const sortedLogs = normalized.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
         setLogs(sortedLogs);
         setFilteredLogs(sortedLogs);
+        setError("");
       })
       .catch((err) => {
         console.error("Error fetch logs:", err);
+        if (err.message === "Unauthorized") {
+          setError("Sesi berakhir. Silakan login ulang.");
+          navigate("/admin/login");
+        } else {
+          setError("Gagal memuat log aktivitas.");
+        }
         setLogs([]);
         setFilteredLogs([]);
       });
@@ -74,6 +96,11 @@ const AdminLogAktivitas = () => {
       <p style={{ marginBottom: "1.5rem", color: "#4b5563" }}>
         Riwayat aktivitas yang dilakukan admin
       </p>
+      {error && (
+        <div style={{ marginBottom: "1rem", color: "#b91c1c", fontWeight: 600 }}>
+          {error}
+        </div>
+      )}
 
       {/* 🔍 Search bar */}
       <div
@@ -135,7 +162,7 @@ const AdminLogAktivitas = () => {
                   <td style={tdStyle}>{index + 1}</td>
                   <td style={tdStyle}>{log.aktivitas}</td>
                   <td style={tdStyle}>{log.admin}</td>
-                  <td style={tdStyle}>{log.waktu}</td>
+                  <td style={tdStyle}>{new Date(log.waktu).toLocaleString("id-ID")}</td>
                 </tr>
               ))
             ) : (

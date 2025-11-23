@@ -1,262 +1,241 @@
-const Pemesanan = require('../models/pemesananModel');
-const pool = require('../config/db');
-const midtransClient = require('midtrans-client'); // kalau pakai Snap server
-const snap = new midtransClient.Snap({
-  isProduction: false,
-  serverKey: process.env.MIDTRANS_SERVER_KEY
-});
+class PesananController {
+  constructor({ repo, snap, LogModel, now = () => Date.now() }) {
+    this.repo = repo;
+    this.snap = snap;
+    this.LogModel = LogModel;
+    this.now = now;
 
-
-const getAllPesananByCabang = async (req, res) => {
-    try {
-        const { id_cabang } = req.params;
-        const pesanan = await Pemesanan.findAllByCabang(id_cabang);
-        res.json(pesanan);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-};
-
-const updateStatusPesanan = async (req, res) => {
-    try {
-        const { id_pesanan } = req.params;
-        const { status } = req.body;
-        const result = await Pemesanan.updateStatus(id_pesanan, status);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
-        res.json({ message: `Status pesanan berhasil diubah menjadi ${status}` });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-};
-
-const getStatsByCabang = async (req, res) => {
-    try {
-        const { id_cabang } = req.params;
-        const stats = await Pemesanan.getDashboardStats(id_cabang);
-        res.json(stats);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-};
-
-const getPesananById = async (req, res) => {
-    try {
-        const { id_pesanan } = req.params;
-        const pesanan = await Pemesanan.findById(id_pesanan);
-        if (!pesanan) {
-            return res.status(404).json({ message: 'Detail pesanan tidak ditemukan' });
-        }
-        res.json(pesanan);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-    
-};
-
-const getOrderHistory = async (req, res) => {
-  try {
-    const id_pengguna = req.user?.id;
-    if (!id_pengguna) {
-      return res.status(400).json({ message: 'id_pengguna tidak ditemukan pada token' });
-    }
-
-    const [orders] = await pool.query(
-      `
-      SELECT 
-        p.id_pesanan        AS id,
-        p.nomor_pesanan,
-        p.tanggal_dibuat,
-        p.status,
-        p.total_harga,
-        p.tipe_pesanan,
-        c.nama_cabang       AS cabang,
-        pb.payment_type     AS metode_pembayaran
-      FROM pesanan p
-      LEFT JOIN cabang c ON c.id_cabang = p.id_cabang
-      LEFT JOIN (
-        SELECT x.*
-        FROM pembayaran x
-        JOIN (
-          SELECT id_pesanan, MAX(id_pembayaran) AS last_id
-          FROM pembayaran
-          GROUP BY id_pesanan
-        ) y ON x.id_pesanan = y.id_pesanan AND x.id_pembayaran = y.last_id
-      ) pb ON pb.id_pesanan = p.id_pesanan
-      WHERE p.id_pengguna = ?
-      ORDER BY p.tanggal_dibuat DESC
-      `,
-      [id_pengguna]
-    );
-
-    if (!orders || orders.length === 0) {
-      return res.json([]); // tidak ada pesanan
-    }
-
-    // Ambil semua item untuk semua pesanan di atas
-    const ids = orders.map(o => o.id);
-    const placeholders = ids.map(() => '?').join(',');
-    const [items] = await pool.query(
-      `
-      SELECT 
-        pi.id_pesanan,
-        pi.id_item,
-        pi.id_menu,
-        m.nama_menu,
-        pi.jumlah,
-        pi.catatan,          -- <- perbaikan di sini
-        pi.harga_satuan,
-        pi.subtotal
-      FROM pesanan_item pi
-      LEFT JOIN menu m ON m.id_menu = pi.id_menu
-      WHERE pi.id_pesanan IN (${placeholders})
-      ORDER BY pi.id_item ASC
-      `,
-      ids
-    );
-
-    // Kelompokkan items per pesanan
-    const bucket = {};
-    for (const it of items) {
-      if (!bucket[it.id_pesanan]) bucket[it.id_pesanan] = [];
-      bucket[it.id_pesanan].push({
-        id_menu: it.id_menu,
-        nama_menu: it.nama_menu,
-        jumlah: it.jumlah,
-        catatan: it.catatan || null,
-        harga_satuan: Number(it.harga_satuan || 0),
-        subtotal: Number(it.subtotal || 0),
-      });
-    }
-
-    const result = orders.map(o => ({
-      ...o,
-      metode_pembayaran: o.metode_pembayaran || '-', // fallback
-      items: bucket[o.id] || []
-    }));
-
-    res.json(result);
-  } catch (err) {
-    console.error('getOrderHistory err:', err);
-    res.status(500).json({ message: 'Gagal memuat riwayat pesanan' });
+    this.checkout = this.checkout.bind(this);
+    this.semuaByCabang = this.semuaByCabang.bind(this);
+    this.ubahStatus = this.ubahStatus.bind(this);
+    this.statistikCabang = this.statistikCabang.bind(this);
+    this.detail = this.detail.bind(this);
+    this.riwayatPengguna = this.riwayatPengguna.bind(this);
+    this.detailPelanggan = this.detailPelanggan.bind(this);
+    this.recreatePembayaran = this.recreatePembayaran.bind(this);
+    this.pembayaranTerbaru = this.pembayaranTerbaru.bind(this);
+    this.jumlahPending = this.jumlahPending.bind(this);
   }
-};
 
-const getPesananDetailForCustomer = async (req, res) => {
-  const { id_pesanan } = req.params;
-  const id_pengguna = req.user?.id;
+  #subtotal(items) {
+    return items.reduce((s, it) => {
+      const harga = Number(it.harga) || 0;
+      const qty = Number(it.jumlah ?? it.qty) || 0;
+      return s + harga * qty;
+    }, 0);
+  }
 
-  // + join tempat_duduk (td) untuk ambil nomor_meja
-  const [rows] = await pool.query(`
-    SELECT 
-      p.*, 
-      c.nama_cabang AS cabang,
-      td.nomor_meja
-    FROM pesanan p
-    LEFT JOIN cabang c       ON c.id_cabang = p.id_cabang
-    LEFT JOIN tempat_duduk td ON td.id_meja  = p.id_meja
-    WHERE p.id_pesanan = ? AND p.id_pengguna = ?
-    LIMIT 1
-  `, [id_pesanan, id_pengguna]);
-
-  if (!rows.length) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
-
-  const pesanan = rows[0];
-
-  // + ambil catatan item
-  const [items] = await pool.query(`
-    SELECT 
-      pi.id_menu,
-      m.nama_menu,
-      pi.jumlah,
-      pi.harga_satuan,
-      pi.subtotal,
-      pi.catatan
-    FROM pesanan_item pi
-    LEFT JOIN menu m ON m.id_menu = pi.id_menu
-    WHERE pi.id_pesanan = ?
-    ORDER BY pi.id_item ASC
-  `, [id_pesanan]);
-
-  const [pemb] = await pool.query(`
-    SELECT *
-    FROM pembayaran
-    WHERE id_pesanan = ?
-    ORDER BY id_pembayaran DESC
-    LIMIT 1
-  `, [id_pesanan]);
-
-  res.json({
-    pesanan: {
-      id: pesanan.id_pesanan,
-      nomor_pesanan: pesanan.nomor_pesanan,
-      tanggal_dibuat: pesanan.tanggal_dibuat,
-      status: pesanan.status,
-      total_harga: pesanan.total_harga,
-      tipe_pesanan: pesanan.tipe_pesanan,
-      cabang: pesanan.cabang,
-      id_meja: pesanan.id_meja,
-      nomor_meja: pesanan.nomor_meja,      // <— tambahan
-      items
-    },
-    pembayaran_terakhir: pemb[0] || null
-  });
-};
-
-const recreatePaymentForCustomer = async (req,res)=>{
-  const { id_pesanan } = req.params;
-  const id_pengguna = req.user?.id;
-
-  // cek kepemilikan & ambil total
-  const [rows] = await pool.query(`SELECT * FROM pesanan WHERE id_pesanan=? AND id_pengguna=? LIMIT 1`, [id_pesanan, id_pengguna]);
-  if (!rows.length) return res.status(404).json({message:'Pesanan tidak ditemukan'});
-  const p = rows[0];
-
-  // buat order_id unik (misal: ORDER-<id>-<timestamp>)
-  const order_id = `ORDER-${p.id_pesanan}-${Date.now()}`;
-
-  const parameter = {
-    transaction_details: { order_id, gross_amount: Number(p.total_harga) },
-    credit_card: { secure: true },
-    enabled_payments: ['qris','gopay','bank_transfer','credit_card']
-  };
-
-  const snapRes = await snap.createTransaction(parameter);
-
-  // simpan ke tabel pembayaran (status awal 'pending')
-  const [ins] = await pool.query(`
-    INSERT INTO pembayaran (id_pesanan, order_id, snap_token, snap_redirect_url, metode_pembayaran, payment_type, status_pembayaran, jumlah_bayar, tanggal_dibuat)
-    VALUES (?,?,?,?,?,?, 'pending', ?, NOW())
-  `, [
-    id_pesanan,
-    order_id,
-    snapRes.token || null,
-    snapRes.redirect_url || null,
-    'qris',          // bisa disesuaikan dari pilihan user
-    snapRes.payment_type || 'snap',
-    p.total_harga
-  ]);
-
-  res.json({
-    pembayaran: {
-      id_pembayaran: ins.insertId,
-      id_pesanan,
-      order_id,
-      snap_token: snapRes.token || null,
-      snap_redirect_url: snapRes.redirect_url || null,
-      metode_pembayaran: 'qris',
-      payment_type: snapRes.payment_type || 'snap',
-      status_pembayaran: 'pending',
-      jumlah_bayar: p.total_harga
+  async checkout(req, res, next) {
+    const { id_pengguna, id_cabang, tipe_pesanan, items } = req.body || {};
+    if (!id_pengguna || !id_cabang || !tipe_pesanan || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Data checkout tidak lengkap' });
     }
-  });
-};
 
-module.exports = {
-    getAllPesananByCabang,
-    updateStatusPesanan,
-    getPesananDetailForCustomer,
-    recreatePaymentForCustomer,
-    getStatsByCabang,
-    getPesananById,
-    getOrderHistory
-};
+    const conn = await this.repo.koneksi();
+    try {
+      await conn.beginTransaction();
+
+      const subtotal = Math.round(this.#subtotal(items));
+      const total = subtotal;
+      const nomorPesanan = `ORD-${this.now()}`;
+
+      const id_pesanan = await this.repo.buatPesanan(conn, {
+        nomor_pesanan: nomorPesanan, id_pengguna, id_cabang, tipe_pesanan, total
+      });
+
+      for (const it of items) {
+        await this.repo.tambahItemPesanan(conn, {
+          id_pesanan,
+          id_menu: it.id_menu,
+          qty: Number(it.jumlah ?? it.qty) || 0,
+          catatan: it.catatan ?? it.note,
+          harga: Number(it.harga) || 0
+        });
+      }
+
+      await this.repo.buatPembayaranStub(conn, { id_pesanan, total, order_id: nomorPesanan });
+      await conn.commit();
+
+      return res.status(201).json({
+        message: 'Checkout berhasil',
+        id_pesanan,
+        nomorPesanan,
+        subtotal,
+        total_harga: total,
+        status: 'pending'
+      });
+    } catch (e) {
+      try { await conn.rollback(); } catch {}
+      return next(e);
+    } finally {
+      try { conn.release(); } catch {}
+    }
+  }
+
+  async semuaByCabang(req, res, next) {
+    try {
+      res.json(await this.repo.semuaByCabang(req.params.id_cabang));
+    } catch (e) { next(e); }
+  }
+
+  async ubahStatus(req, res, next) {
+    try {
+      const { id_pesanan } = req.params;
+      const { status } = req.body;
+      const r = await this.repo.ubahStatus(id_pesanan, status);
+      if (r.affectedRows === 0) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+
+      try {
+        if (this.LogModel && req.user?.id) {
+          await this.LogModel.addLog({
+            id_admin: req.user.id,
+            aksi: 'status_change',
+            entitas: 'pesanan',
+            entitas_id: id_pesanan,
+            keterangan: `Ubah status pesanan ${id_pesanan} -> ${status}`,
+            user_agent: req.get('user-agent') || null
+          });
+        }
+      } catch (logErr) {
+        console.warn('Gagal menulis log ubah status pesanan:', logErr.message);
+      }
+
+      res.json({ message: `Status pesanan berhasil diubah menjadi ${status}` });
+    } catch (e) { next(e); }
+  }
+
+  async statistikCabang(req, res, next) {
+    try { res.json(await this.repo.statistikCabang(req.params.id_cabang)); }
+    catch (e) { next(e); }
+  }
+
+  async detail(req, res, next) {
+    try {
+      const d = await this.repo.detailById(req.params.id_pesanan);
+      if (!d) return res.status(404).json({ message: 'Detail pesanan tidak ditemukan' });
+      res.json(d);
+    } catch (e) { next(e); }
+  }
+
+  async riwayatPengguna(req, res, next) {
+    try {
+      const id_pengguna = req.user?.id;
+      if (!id_pengguna) return res.status(400).json({ message: 'id_pengguna tidak ditemukan pada token' });
+
+      const orders = await this.repo.pesananByPengguna(id_pengguna);
+      if (!orders.length) return res.json([]);
+
+      const ids = orders.map(o => o.id);
+      const items = await this.repo.itemByOrderIds(ids);
+
+      const bucket = {};
+      for (const it of items) {
+        (bucket[it.id_pesanan] ||= []).push({
+          id_menu: it.id_menu,
+          nama_menu: it.nama_menu,
+          jumlah: it.jumlah,
+          catatan: it.catatan || null,
+          harga_satuan: Number(it.harga_satuan || 0),
+          subtotal: Number(it.subtotal || 0)
+        });
+      }
+      const result = orders.map(o => ({
+        ...o,
+        metode_pembayaran: o.metode_pembayaran || '-',
+        items: bucket[o.id] || []
+      }));
+      res.json(result);
+    } catch (e) { next(e); }
+  }
+
+  async detailPelanggan(req, res, next) {
+    try {
+      const { id_pesanan } = req.params;
+      const id_pengguna = req.user?.id;
+
+      const own = await this.repo.milikPengguna(id_pesanan, id_pengguna);
+      if (!own) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+
+      const p = await this.repo.detailById(id_pesanan);
+      const latest = await this.repo.latestPembayaran(id_pesanan);
+
+      res.json({
+        pesanan: {
+          id: p.id_pesanan,
+          nomor_pesanan: p.nomor_pesanan,
+          tanggal_dibuat: p.tanggal_dibuat,
+          status: p.status,
+          total_harga: p.total_harga,
+          tipe_pesanan: p.tipe_pesanan,
+          cabang: p.cabang,         // tergantung kolom di view kamu
+          items: p.items.map(i => ({
+            id_menu: i.id_menu, nama_menu: i.nama_menu, jumlah: i.jumlah,
+            harga_satuan: i.harga_satuan, subtotal: i.subtotal, catatan: i.catatan
+          }))
+        },
+        pembayaran_terakhir: latest
+      });
+    } catch (e) { next(e); }
+  }
+
+  async recreatePembayaran(req, res, next) {
+    try {
+      const { id_pesanan } = req.params;
+      const id_pengguna = req.user?.id;
+
+      const own = await this.repo.milikPengguna(id_pesanan, id_pengguna);
+      if (!own) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+
+      const p = await this.repo.detailById(id_pesanan);
+      if (!p) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+
+      const order_id = `ORDER-${p.id_pesanan}-${this.now()}`;
+      const parameter = {
+        transaction_details: { order_id, gross_amount: Number(p.total_harga) },
+        credit_card: { secure: true },
+        enabled_payments: ['qris','gopay','bank_transfer','credit_card']
+      };
+
+      const snapRes = await this.snap.createTransaction(parameter);
+      const id_pembayaran = await this.repo.simpanPembayaranSnap({
+        id_pesanan, order_id,
+        snap_token: snapRes.token,
+        snap_redirect_url: snapRes.redirect_url,
+        payment_type: snapRes.payment_type || 'snap',
+        jumlah_bayar: p.total_harga
+      });
+
+      res.json({
+        pembayaran: {
+          id_pembayaran, id_pesanan, order_id,
+          snap_token: snapRes.token || null,
+          snap_redirect_url: snapRes.redirect_url || null,
+          metode_pembayaran: 'qris',
+          payment_type: snapRes.payment_type || 'snap',
+          status_pembayaran: 'pending',
+          jumlah_bayar: p.total_harga
+        }
+      });
+    } catch (e) { next(e); }
+  }
+
+  async pembayaranTerbaru(req, res, next) {
+    try {
+      const { id_pesanan } = req.params;
+      const id_pengguna = req.user?.id;
+
+      const own = await this.repo.milikPengguna(id_pesanan, id_pengguna);
+      if (!own) return res.status(404).json({ message: 'Tidak ditemukan' });
+
+      res.json(await this.repo.latestPembayaran(id_pesanan));
+    } catch (e) { next(e); }
+  }
+
+  async jumlahPending(req, res, next) {
+    try {
+      res.json({ count: await this.repo.hitungPendingByCabang(req.params.id_cabang) });
+    } catch (e) { next(e); }
+  }
+}
+
+module.exports = { PesananController };

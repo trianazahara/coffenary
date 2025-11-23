@@ -1,4 +1,4 @@
-const { Pembayaran } = require('../../controllers/Pembayaran');
+const { PembayaranController: Pembayaran } = require('../../controllers/PembayaranController');
 
 function mkRes() {
   return {
@@ -293,4 +293,110 @@ describe('Pembayaran Controller (unit, single file)', () => {
 
     expect(res.body).toHaveProperty('snap');
   });
+
+  test('400 ketika req.body undefined → fallback {} (cover req.body || {})', async () => {
+    const pool = {}; const snap = {};
+    const ctrl = new Pembayaran({ pool, snap, now: () => NOW });
+
+    const res = mkRes();
+    // panggil dengan req tanpa body
+    await ctrl.initiate({}, res, mkNext());
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ message: 'id_pesanan wajib' });
+  });
+
+  test('mapping item: id kosong, name fallback "Item", qty:0 → quantity 1, price default 0', async () => {
+    const pool = {
+      query: jest
+        .fn()
+        // SELECT pesanan
+        .mockResolvedValueOnce([[{ id_pesanan: 66, total_harga: 0 }], []])
+        // UPDATE pembayaran utama
+        .mockResolvedValueOnce([{}, {}])
+        // UPDATE kolom tambahan
+        .mockResolvedValueOnce([{}, {}])
+    };
+    const snap = { createTransaction: jest.fn().mockResolvedValue({ token: 't66', redirect_url: 'r66' }) };
+    const ctrl = new Pembayaran({ pool, snap, now: () => NOW });
+
+    const res = mkRes();
+    await ctrl.initiate({
+      body: {
+        id_pesanan: 66,
+        // item tanpa id_menu & id, tanpa nama_xxx, qty:0 -> quantity jadi 1, price 0, name "Item", id ""
+        items: [{ qty: 0 }]
+      }
+    }, res, mkNext());
+
+    expect(snap.createTransaction).toHaveBeenCalledWith(expect.objectContaining({
+      item_details: expect.arrayContaining([
+        { id: '', price: 0, quantity: 1, name: 'Item' }
+      ])
+    }));
+    expect(res.statusCode).toBe(200);
+  });
+
+  test('fallback DB: harga_satuan/jumlah null → price & quantity default 0', async () => {
+    const NOW = 1711111111111;
+    const pool = {
+      query: jest
+        .fn()
+        // 1) SELECT pesanan
+        .mockResolvedValueOnce([[{ id_pesanan: 12, total_harga: 12345 }], []])
+        // 2) SELECT pesanan_item (dengan nilai null/undefined untuk memicu || 0)
+        .mockResolvedValueOnce([[{ id_menu: 42, nama_menu: 'Tester', jumlah: null, harga_satuan: undefined }], []])
+        // 3) UPDATE pembayaran utama
+        .mockResolvedValueOnce([{}, {}])
+        // 4) UPDATE kolom tambahan
+        .mockResolvedValueOnce([{}, {}])
+    };
+    const snap = { createTransaction: jest.fn().mockResolvedValue({ token: 't12', redirect_url: 'r12' }) };
+    const ctrl = new (require('../../controllers/PembayaranController').PembayaranController)({ pool, snap, now: () => NOW });
+
+    const res = { statusCode: 200, body: null, status(c){ this.statusCode=c; return this; }, json(p){ this.body=p; return this; } };
+    await ctrl.initiate({ body: { id_pesanan: 12 } }, res, jest.fn());
+
+    expect(res.statusCode).toBe(200);
+    expect(snap.createTransaction).toHaveBeenCalledWith(expect.objectContaining({
+      transaction_details: { order_id: `ORDER-12-${NOW}`, gross_amount: 12345 },
+      item_details: [
+        { id: '42', price: 0, quantity: 0, name: 'Tester' }  // ← default dari || 0
+      ]
+    }));
+  });
+
+  test('update kolom tambahan: token/redirect_url falsy → disimpan sebagai null', async () => {
+    const pool = {
+      query: jest
+        .fn()
+        // SELECT pesanan
+        .mockResolvedValueOnce([[{ id_pesanan: 77, total_harga: 12345 }], []])
+        // UPDATE pembayaran utama
+        .mockResolvedValueOnce([{}, {}])
+        // UPDATE kolom tambahan (yang mau kita cek nilai null-nya)
+        .mockResolvedValueOnce([{}, {}])
+    };
+    // snap balikin objek kosong supaya token & redirect_url undefined
+    const snap = { createTransaction: jest.fn().mockResolvedValue({}) };
+    const ctrl = new Pembayaran({ pool, snap, now: () => NOW });
+
+    const res = mkRes();
+    await ctrl.initiate({
+      body: {
+        id_pesanan: 77,
+        // kirim items supaya tidak SELECT pesanan_item
+        items: [{ id_menu: 1, harga: 12345, jumlah: 1, nama_menu: 'Latte' }]
+      }
+    }, res, mkNext());
+
+    // panggilan ke-3 adalah UPDATE kolom tambahan
+    const third = pool.query.mock.calls[2];
+    expect(String(third[0])).toContain('SET snap_token = ?, snap_redirect_url = ?, payment_type = ?');
+    const vals = third[1];
+    expect(vals).toEqual([null, null, 'snap', 77]); // ← baris 92 ter-cover
+    expect(res.statusCode).toBe(200);
+  });
+
+
 });

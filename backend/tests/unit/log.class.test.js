@@ -1,4 +1,4 @@
-const { Log } = require('../../controllers/Log');
+const { LogController: Log } = require('../../controllers/LogController');
 
 function mkRes() {
   return {
@@ -11,12 +11,14 @@ function mkRes() {
 function mkNext() { return jest.fn(); }
 
 describe('Log Controller (unit, single file)', () => {
+  const baseReq = { query: {} };
+
   test('semua: sukses (model sync)', async () => {
     const LogModel = { getLogs: jest.fn(() => [{ id: 1, msg: 'ok' }]) };
     const ctrl = new Log({ LogModel });
 
     const res = mkRes(); const next = mkNext();
-    await ctrl.semua({}, res, next);
+    await ctrl.semua(baseReq, res, next);
 
     expect(LogModel.getLogs).toHaveBeenCalled();
     expect(res.statusCode).toBe(200);
@@ -29,8 +31,9 @@ describe('Log Controller (unit, single file)', () => {
     const ctrl = new Log({ LogModel });
 
     const res = mkRes(); const next = mkNext();
-    await ctrl.semua({}, res, next);
+    await ctrl.semua(baseReq, res, next);
 
+    expect(res.statusCode).toBe(200);
     expect(res.body).toEqual([{ id: 2, msg: 'async' }]);
     expect(next).not.toHaveBeenCalled();
   });
@@ -40,8 +43,25 @@ describe('Log Controller (unit, single file)', () => {
     const ctrl = new Log({ LogModel });
 
     const res = mkRes(); const next = mkNext();
-    await ctrl.semua({}, res, next);
+    await ctrl.semua(baseReq, res, next);
 
+    expect(next).toHaveBeenCalled();
+  });
+
+  test('clear: sukses', async () => {
+    const LogModel = { clearLogs: jest.fn().mockResolvedValue({}) };
+    const ctrl = new Log({ LogModel });
+    const res = mkRes();
+    await ctrl.clear({}, res, mkNext());
+    expect(LogModel.clearLogs).toHaveBeenCalled();
+    expect(res.body).toEqual({ message: 'Semua log dihapus' });
+  });
+
+  test('clear: error → next(err)', async () => {
+    const LogModel = { clearLogs: jest.fn(() => { throw new Error('fail'); }) };
+    const ctrl = new Log({ LogModel });
+    const next = mkNext();
+    await ctrl.clear({}, mkRes(), next);
     expect(next).toHaveBeenCalled();
   });
 });

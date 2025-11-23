@@ -1,6 +1,6 @@
 process.env.JWT_SECRET = 'testsecret';
 
-const { Auth } = require('../../controllers/Auth');
+const { AuthController: Auth } = require('../../controllers/AuthController');
 
 function mkRes() {
   return {

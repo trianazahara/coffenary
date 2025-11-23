@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const styles = {
   header: {
@@ -36,6 +37,8 @@ const styles = {
 
 const AdminDaftarPelanggan = () => {
   const [pelanggan, setPelanggan] = useState([]);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const formatTanggal = (tanggalString) => {
     const date = new Date(tanggalString);
@@ -48,10 +51,28 @@ const AdminDaftarPelanggan = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/pelanggan");
+        const token =
+          localStorage.getItem("adminToken") ||
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken");
+        if (!token) {
+          setError("Token tidak ditemukan, silakan login ulang.");
+          return;
+        }
+
+        const res = await axios.get("http://localhost:5000/api/pengguna?tipe=pelanggan", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setPelanggan(res.data);
+        setError("");
       } catch (err) {
         console.error("Gagal ambil data pelanggan:", err);
+        if (err?.response?.status === 401) {
+          setError("Sesi berakhir. Silakan login ulang.");
+          navigate("/admin/login");
+        } else {
+          setError("Gagal memuat data pelanggan.");
+        }
       }
     };
     fetchData();
@@ -62,6 +83,11 @@ const AdminDaftarPelanggan = () => {
       <div style={styles.header}>
         <h1 style={styles.title}>Daftar Pelanggan</h1>
       </div>
+      {error && (
+        <div style={{ marginBottom: "1rem", color: "#b91c1c", fontWeight: 600 }}>
+          {error}
+        </div>
+      )}
 
       <table style={styles.table}>
         <thead>

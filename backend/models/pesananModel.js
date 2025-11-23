@@ -1,5 +1,5 @@
 // models/PesananM.js
-class PesananM {
+class Pesanan {
   constructor(pool) {
     this.pool = pool;
   }
@@ -9,12 +9,12 @@ class PesananM {
   }
 
   // CREATE
-  async buatPesanan(conn, { nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja, total }) {
+  async buatPesanan(conn, { nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, total }) {
     const [res] = await conn.query(
       `INSERT INTO pesanan
-        (nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja, status, total_harga, tanggal_dibuat)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, NOW())`,
-      [nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, id_meja ?? null, total]
+        (nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, status, total_harga, tanggal_dibuat)
+       VALUES (?, ?, ?, ?, 'pending', ?, NOW())`,
+      [nomor_pesanan, id_pengguna, id_cabang, tipe_pesanan, total]
     );
     return res.insertId;
   }
@@ -31,9 +31,9 @@ class PesananM {
   async buatPembayaranStub(conn, { id_pesanan, total, order_id }) {
     await conn.query(
       `INSERT INTO pembayaran
-        (id_pesanan, metode_pembayaran, status_pembayaran, jumlah_bayar, order_id, respon_gateway, tanggal_pembayaran, tanggal_dibuat)
-       VALUES (?, 'qris', 'pending', ?, ?, ?, ?, NOW())`,
-      [id_pesanan, total, order_id, JSON.stringify({ stage: 'stub' }), null]
+        (id_pesanan, order_id, snap_token, snap_redirect_url, metode_pembayaran, payment_type, status_pembayaran, jumlah_bayar, referensi_pembayaran, respon_gateway, transaction_id, tanggal_pembayaran, tanggal_dibuat)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [id_pesanan, order_id, null, null, 'qris', null, 'pending', total, null, JSON.stringify({ stage: 'stub' }), null, null]
     );
   }
 
@@ -52,10 +52,10 @@ class PesananM {
 
   async detailById(id_pesanan) {
     const [orderRows] = await this.pool.query(
-      `SELECT p.*, pg.nama_lengkap AS nama_pelanggan, td.nomor_meja
+      `SELECT p.*, pg.nama_lengkap AS nama_pelanggan, c.nama_cabang AS cabang
        FROM pesanan p
        JOIN pengguna pg ON p.id_pengguna = pg.id_pengguna
-       LEFT JOIN tempat_duduk td ON p.id_meja = td.id_meja
+       LEFT JOIN cabang c ON p.id_cabang = c.id_cabang
        WHERE p.id_pesanan = ?`,
       [id_pesanan]
     );
@@ -194,4 +194,4 @@ class PesananM {
   }
 }
 
-module.exports = PesananM;
+module.exports = Pesanan;

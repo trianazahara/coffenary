@@ -31,6 +31,7 @@ import RegisterPage from './pages/RegisterPage';
 import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminDaftarPelanggan from "./pages/admin/AdminDaftarPelanggan";
 import AdminTempatDuduk from './pages/admin/AdminTempatDuduk';
+import AdminCabang from './pages/admin/AdminCabang';
 
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
           <Route path="profile" element={<AdminProfilePage />} />
           <Route path="daftar-pelanggan" element={<AdminDaftarPelanggan />} />
           <Route path="tempat-duduk" element={<AdminTempatDuduk />} />
+          <Route path="cabang" element={<AdminCabang />} />
         </Route>
 
         {/* Tambahkan rute untuk pelanggan di sini */}
@@ -88,6 +90,7 @@ function App() {
             <Route path="pengguna" element={<AdminPengguna />} /> 
             <Route path="log" element={<AdminLog />} />       
             <Route path="log-aktivitas" element={<AdminLogAktivitas />} />
+            <Route path="cabang" element={<AdminCabang />} />
           </Route>
 
           {/* Rute untuk pelanggan */}

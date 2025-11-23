@@ -1,10 +1,10 @@
 const router = require('express').Router();
 const Model = require('../models/penggunaModel'); // expose: findAll, findByEmail, updateAdmin, updateProfile, create
 const bcrypt = require('bcryptjs');
-const { Pengguna } = require('../controllers/Pengguna');
+const { PenggunaController } = require('../controllers/PenggunaController');
 const { protect, checkRole } = require('../middleware/authMiddleware');
 
-const ctrl = new Pengguna({ repo: Model, bcrypt });
+const ctrl = new PenggunaController({ repo: Model, bcrypt });
 
 // pelanggan update profil sendiri
 router.put('/me', protect, checkRole(['pelanggan']), ctrl.updateMe);

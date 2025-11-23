@@ -2,11 +2,12 @@
 const router = require('express').Router();
 const pool = require('../config/db');
 const MenuModel = require('../models/menuModel');
-const { Menu } = require('../controllers/Menu');
+const LogModel = require('../models/logModel');
+const { MenuController } = require('../controllers/MenuController');
 const { protect, checkRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
-const menu = new Menu({ repo: MenuModel, pool });
+const menu = new MenuController({ repo: MenuModel, pool, LogModel });
 
 // 1) Static dulu
 router.get('/featured', menu.unggulan);

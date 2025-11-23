@@ -1,5 +1,5 @@
 // controllers/Notifikasi.js
-class Notifikasi {
+class NotifikasiController {
   constructor({ pool, serverKey, crypto }) {
     this.pool = pool;
     this.serverKey = serverKey;
@@ -47,7 +47,6 @@ class Notifikasi {
       const pembayaranRow = rows?.[0];
 
       if (!pembayaranRow) {
-        // edge: belum ada baris, sisipkan minimal
         await this.pool.query(
           `INSERT INTO pembayaran 
             (id_pesanan, metode_pembayaran, status_pembayaran, jumlah_bayar, referensi_pembayaran, respon_gateway, tanggal_pembayaran, tanggal_dibuat)
@@ -91,4 +90,4 @@ class Notifikasi {
   }
 }
 
-module.exports = { Notifikasi };
+module.exports = { NotifikasiController };

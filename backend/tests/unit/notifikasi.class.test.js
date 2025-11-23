@@ -1,4 +1,4 @@
-const { Notifikasi } = require('../../controllers/Notifikasi');
+const { NotifikasiController: Notifikasi } = require('../../controllers/NotifikasiController');
 const crypto = require('crypto');
 
 function mkRes() {
@@ -232,11 +232,152 @@ describe('Notifikasi Controller (Midtrans)', () => {
         .mockResolvedValueOnce([{}, {}]) // UPDATE utama
         .mockResolvedValueOnce([{}, {}]) // UPDATE opsional
     };
-    const { Notifikasi } = require('../../controllers/Notifikasi');
+    const { NotifikasiController: Notifikasi } = require('../../controllers/NotifikasiController');
     const ctrl = new Notifikasi({ pool, serverKey: 'x', crypto: require('crypto') });
     const res = { statusCode: 200, body:null, status(c){this.statusCode=c;return this;}, json(p){this.body=p;return this;} };
     await ctrl.handle({ body:{ order_id:'ORDER-2', status_code:'200', gross_amount:'1000', transaction_status:'pending' } }, res, jest.fn());
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ message: 'OK' });
   });
+
+  // 1) capture → set pesanan "terkonfirmasi" (cover cabang pertama selain settlement)
+  test('update pembayaran + set pesanan terkonfirmasi untuk capture', async () => {
+    const SERVER_KEY = 'sk_test';
+    const crypto = require('crypto');
+    const makeSig = ({ order_id, status_code, gross_amount }) =>
+      crypto.createHash('sha512').update(`${order_id}${status_code}${gross_amount}${SERVER_KEY}`).digest('hex');
+
+    const pool = {
+      query: jest
+        .fn()
+        // SELECT pembayaran -> ada
+        .mockResolvedValueOnce([[{ id_pembayaran: 3, id_pesanan: 44, jumlah_bayar: 15000 }], []])
+        // UPDATE pembayaran utama
+        .mockResolvedValueOnce([{}, {}])
+        // UPDATE kolom opsional
+        .mockResolvedValueOnce([{}, {}])
+        // UPDATE pesanan status -> terkonfirmasi
+        .mockResolvedValueOnce([{}, {}])
+    };
+    const { NotifikasiController: Notifikasi } = require('../../controllers/NotifikasiController');
+    const ctrl = new Notifikasi({ pool, serverKey: SERVER_KEY, crypto });
+
+    const body = {
+      order_id: 'ORDER-44', status_code: '200', gross_amount: '15000',
+      signature_key: makeSig({ order_id: 'ORDER-44', status_code: '200', gross_amount: '15000' }),
+      transaction_status: 'capture',
+      payment_type: 'credit_card', transaction_id: 'tx-44'
+    };
+
+    const res = { statusCode: 200, body:null, status(c){this.statusCode=c;return this;}, json(p){this.body=p;return this;} };
+    await ctrl.handle({ body }, res, jest.fn());
+
+    expect(res.statusCode).toBe(200);
+    expect(pool.query).toHaveBeenLastCalledWith(
+      'UPDATE pesanan SET status = ? WHERE id_pesanan = ?',
+      ['terkonfirmasi', 44]
+    );
+  });
+
+  // 2) defaulting: tanpa transaction_status/transactionStatus dan tanpa payment_type/paymentType
+  //    → status diperlakukan pending (tidak menyentuh pesanan) & INSERT memakai 'qris'
+  test('INSERT memakai default payment_type "qris" dan default status pending saat field tidak dikirim', async () => {
+    const pool = {
+      query: jest
+        .fn()
+        // SELECT pembayaran -> kosong
+        .mockResolvedValueOnce([[], []])
+        // INSERT pembayaran
+        .mockResolvedValueOnce([{}, {}])
+    };
+    const { NotifikasiController: Notifikasi } = require('../../controllers/NotifikasiController');
+    const ctrl = new Notifikasi({ pool, serverKey: 'x', crypto: require('crypto') });
+
+    // sengaja TIDAK mengirim transaction_status / payment_type / signature_key
+    const body = {
+      order_id: 'ORDER-1001',
+      status_code: '201',
+      gross_amount: '4321'
+    };
+
+    const res = { statusCode: 200, body:null, status(c){this.statusCode=c;return this;}, json(p){this.body=p;return this;} };
+    await ctrl.handle({ body }, res, jest.fn());
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ message: 'OK' });
+
+    // panggilan ke-2 adalah INSERT dan harus memakai 'qris' (default) dan status 'pending' (default)
+    const [, insertCall] = pool.query.mock.calls;
+    expect(String(insertCall[0])).toContain('INSERT INTO pembayaran');
+    const insertValues = insertCall[1];
+    // values: [null, paymentType||'qris', transactionStatus, gross, order_id, JSON.stringify(body), transactionTime||new Date()]
+    expect(insertValues[1]).toBe('qris');             // default payment_type
+    expect(insertValues[2]).toBe('pending');          // default status
+    expect(insertValues[3]).toBe(4321);               // Number('4321')
+    expect(insertValues[4]).toBe('ORDER-1001');
+
+    // pastikan tidak ada UPDATE pesanan karena status pending
+    const anyUpdatePesanan = pool.query.mock.calls.some(c => String(c[0]).includes('UPDATE pesanan'));
+    expect(anyUpdatePesanan).toBe(false);
+  });
+
+  test('req.body undefined → fallback {} dan INSERT default (order_id undefined, gross 0, status pending, payment_type qris)', async () => {
+    const pool = {
+      query: jest
+        .fn()
+        .mockResolvedValueOnce([[], []])   // SELECT by order_id (undefined) → kosong
+        .mockResolvedValueOnce([{}, {}])   // INSERT pembayaran
+    };
+    const ctrl = new Notifikasi({ pool, serverKey: 'x', crypto: require('crypto') });
+
+    const res = { statusCode: 200, body: null, status(c){this.statusCode=c;return this;}, json(p){this.body=p;return this;} };
+    await ctrl.handle({}, res, jest.fn());   // ← tanpa body
+
+    expect(res.statusCode).toBe(200);
+    const [, insertCall] = pool.query.mock.calls;
+    expect(String(insertCall[0])).toContain('INSERT INTO pembayaran');
+    const vals = insertCall[1];
+    // VALUES: [null, paymentType||'qris', transactionStatus, gross, order_id, JSON.stringify(body), transactionTime||new Date()]
+    expect(vals[1]).toBe('qris');      // default payment_type
+    expect(vals[2]).toBe('pending');   // default status
+    expect(vals[3]).toBe(0);           // Number('') → 0
+    expect(vals[4]).toBeUndefined();   // order_id tidak ada
+  });
+
+  test('gross 0 → memakai pembayaranRow.jumlah_bayar pada UPDATE pembayaran', async () => {
+    const pool = {
+      query: jest
+        .fn()
+        // SELECT pembayaran → ada, dengan jumlah_bayar 7777
+        .mockResolvedValueOnce([[{ id_pembayaran: 2, id_pesanan: 9, jumlah_bayar: 7777 }], []])
+        // UPDATE pembayaran utama
+        .mockResolvedValueOnce([{}, {}])
+        // UPDATE kolom opsional
+        .mockResolvedValueOnce([{}, {}])
+    };
+    const SERVER_KEY = 'sk_test';
+    const makeSig = ({ order_id, status_code, gross_amount }) =>
+      require('crypto').createHash('sha512').update(`${order_id}${status_code}${gross_amount}${SERVER_KEY}`).digest('hex');
+
+    const ctrl = new Notifikasi({ pool, serverKey: SERVER_KEY, crypto: require('crypto') });
+
+    const body = {
+      order_id: 'ORDER-X',
+      status_code: '200',
+      gross_amount: '0', // ← bikin gross = 0
+      signature_key: makeSig({ order_id: 'ORDER-X', status_code: '200', gross_amount: '0' }),
+      transaction_status: 'pending'
+    };
+
+    const res = { statusCode: 200, body: null, status(c){this.statusCode=c;return this;}, json(p){this.body=p;return this;} };
+    await ctrl.handle({ body }, res, jest.fn());
+
+    expect(res.statusCode).toBe(200);
+    // Panggilan ke-2 adalah UPDATE pembayaran utama; param[1] harus 7777 (fallback dari row)
+    const updateArgs = pool.query.mock.calls[1];
+    expect(String(updateArgs[0])).toContain('UPDATE pembayaran');
+    const params = updateArgs[1];
+    expect(params[1]).toBe(7777);
+  });
+
 });

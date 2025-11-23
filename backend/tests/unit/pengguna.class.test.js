@@ -1,4 +1,4 @@
-const { Pengguna } = require('../../controllers/Pengguna');
+const { PenggunaController: Pengguna } = require('../../controllers/PenggunaController');
 
 function mkRes() {
   return {
@@ -186,5 +186,83 @@ describe('Pengguna Controller (unit)', () => {
       { body: { nama_lengkap: 'Ana', email: 'a@a', password: 'x', telepon: '08', peran: 'admin' } },
       mkRes(), mkNext()
     );
+  });
+
+  test('semua: tanpa query → filter default {}', async () => {
+    const repo = { findAll: jest.fn().mockResolvedValue([]) };
+    const ctrl = new Pengguna({ repo, bcrypt: {} });
+
+    const res = mkRes();
+    await ctrl.semua({}, res, mkNext());   // ← query undefined
+    expect(repo.findAll).toHaveBeenCalledWith({});
+    expect(res.body).toEqual([]);
+  });
+
+  test('updateByAdmin: email ditemukan tapi milik id yang sama → lanjut update (bukan 400)', async () => {
+    const repo = {
+      findByEmail: jest.fn().mockResolvedValue({ id_pengguna: 7 }),  // sama dengan params.id
+      updateAdmin: jest.fn().mockResolvedValue({ affectedRows: 1 })
+    };
+    const ctrl = new Pengguna({ repo, bcrypt: { hash: jest.fn() } });
+
+    const res = mkRes();
+    await ctrl.updateByAdmin(
+      { params: { id: 7 }, body: { email: 'same@a.com', nama_lengkap: 'Same User' } },
+      res,
+      mkNext()
+    );
+
+    expect(repo.updateAdmin).toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ message: 'Data pengguna berhasil diperbarui (admin).' });
+  });
+
+  test('updateMe: tanpa password → tidak hashing, updateProfile tetap jalan', async () => {
+    const repo = { updateProfile: jest.fn().mockResolvedValue({ affectedRows: 1 }) };
+    const bcrypt = { hash: jest.fn() };
+    const ctrl = new Pengguna({ repo, bcrypt });
+
+    const res = mkRes();
+    await ctrl.updateMe(
+      { user: { id: 9 }, body: { nama_lengkap: 'Tanpa Password' } }, // password undefined
+      res,
+      mkNext()
+    );
+
+    expect(bcrypt.hash).not.toHaveBeenCalled();
+    const payload = repo.updateProfile.mock.calls[0][1];
+    expect(payload.kata_sandi_hash).toBeUndefined();
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ message: 'Profil berhasil diperbarui.' });
+  });
+
+  test('createByAdmin: body undefined → peran undefined, validasi 400', async () => {
+    const ctrl = new Pengguna({ repo: {}, bcrypt: {} });
+    const res = mkRes();
+
+    await ctrl.createByAdmin({ body: undefined }, res, mkNext());
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ message: 'Peran yang diizinkan hanya admin atau staff.' });
+  });
+
+  test('updateMe: body undefined → destructuring fallback {}, tanpa hashing', async () => {
+    const repo = { updateProfile: jest.fn().mockResolvedValue({ affectedRows: 1 }) };
+    const bcrypt = { hash: jest.fn() };
+    const ctrl = new Pengguna({ repo, bcrypt });
+
+    const res = mkRes();
+    await ctrl.updateMe(
+      { user: { id: 42 }, body: undefined },  // ← trigger req.body || {}
+      res,
+      mkNext()
+    );
+
+    // tidak ada hashing karena password tidak ada
+    expect(bcrypt.hash).not.toHaveBeenCalled();
+
+    // payload ke repo adalah objek kosong (others = {})
+    expect(repo.updateProfile).toHaveBeenCalledWith(42, {});
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ message: 'Profil berhasil diperbarui.' });
   });
 });

@@ -6,16 +6,14 @@ import {
   CreditCard, 
   ShoppingBag, 
   Utensils, 
-  Home, 
-  MapPin, 
+  MapPin,
   Clock,
   Shield,
   CheckCircle,
   AlertCircle,
   ArrowLeft,
   User,
-  Building,
-  Users
+  Building
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/pelanggan/Header";
@@ -109,41 +107,6 @@ const styles = {
   textareaFocus: {
     borderColor: '#10b981',
     boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
-  },
-  tableGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-    gap: '0.75rem',
-    marginTop: '0.5rem'
-  },
-  tableButton: {
-    padding: '1rem 0.5rem',
-    border: '2px solid #e5e7eb',
-    borderRadius: '0.75rem',
-    backgroundColor: 'white',
-    color: '#374151',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.25rem'
-  },
-  tableButtonSelected: {
-    borderColor: '#10b981',
-    backgroundColor: '#f0fdf4',
-    color: '#059669',
-    transform: 'scale(1.05)'
-  },
-  tableCapacity: {
-    fontSize: '0.7rem',
-    color: '#64748b',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.25rem'
   },
   userInfo: {
     backgroundColor: '#f8fafc',
@@ -347,12 +310,10 @@ if (!document.querySelector('#checkout-styles')) {
 
 const CheckoutPage = ({ onSuccess }) => {
   const { cartItems, subtotal, clearCart } = useContext(CartContext);
-  const { user, selectedBranch } = useContext(AuthContext);
+  const { user, token, selectedBranch } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [type, setType] = useState("bawa_pulang");
-  const [tables, setTables] = useState([]);
-  const [selectedTable, setSelectedTable] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -363,26 +324,16 @@ const CheckoutPage = ({ onSuccess }) => {
   const tax = subtotal * 0.1;
   const total = subtotal;
 
-  useEffect(() => {
-    if (type === "makan_di_tempat" && selectedBranch?.id_cabang) {
-      axios
-        .get(`http://localhost:5000/api/tempat-duduk/${selectedBranch.id_cabang}`)
-        .then(res => {
-          console.log('Data meja:', res.data);
-          setTables(res.data);
-        })
-        .catch(err => {
-          console.error('Error fetching tables:', err);
-          setError("Gagal memuat data meja");
-        });
-    }
-  }, [type, selectedBranch]);
-
   const handleCheckout = async () => {
     try {
       setLoading(true);
       setError("");
       setSuccess("");
+      const bearer =
+        token ||
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken");
 
       // Validasi
       if (!user?.id_pengguna) {
@@ -395,16 +346,17 @@ const CheckoutPage = ({ onSuccess }) => {
         setLoading(false);
         return;
       }
-      if (type === "makan_di_tempat" && !selectedTable) {
-        setError("Harap pilih meja untuk dine in");
-        setLoading(false);
-        return;
-      }
       if (!cartItems?.length) {
         setError("Keranjang kosong");
         setLoading(false);
         return;
       }
+      if (!bearer) {
+        setError("Token tidak ditemukan. Silakan login ulang.");
+        setLoading(false);
+        return;
+      }
+      const authConfig = { headers: { Authorization: `Bearer ${bearer}` } };
 
       // Bentuk payload items sesuai backend
       const itemsPayload = cartItems.map(it => ({
@@ -415,28 +367,26 @@ const CheckoutPage = ({ onSuccess }) => {
       }));
 
       // 1) Buat pesanan
-      const coRes = await axios.post("http://localhost:5000/api/checkout", {
-        id_pengguna: user.id_pengguna,
-        id_cabang: selectedBranch.id_cabang,
-        tipe_pesanan: type,
-        ...(type === "makan_di_tempat" && { id_meja: selectedTable }),
-        items: cartItems.map(it => ({
-          id_menu: it.id_menu,
-          jumlah: it.qty,
-          harga: it.harga,
-          catatan: it.notes || it.note || null
-        })),
-        catatan: note
-      });
+      const coRes = await axios.post(
+        "http://localhost:5000/api/checkout",
+        {
+          id_pengguna: user.id_pengguna,
+          id_cabang: selectedBranch.id_cabang,
+          tipe_pesanan: type,
+          items: cartItems.map(it => ({
+            id_menu: it.id_menu,
+            jumlah: it.qty,
+            harga: it.harga,
+            catatan: it.notes || it.note || null
+          })),
+          catatan: note
+        },
+        authConfig
+      );
 
       const { id_pesanan, nomorPesanan, total_harga } = coRes.data;
 
       // 2) Inisiasi pembayaran (perlu token Bearer – ambil dari AuthContext atau localStorage)
-      const bearer =
-        AuthContext.token ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("authToken");
-
       const initRes = await axios.post(
         "http://localhost:5000/api/pembayaran/initiate",
         {
@@ -450,7 +400,7 @@ const CheckoutPage = ({ onSuccess }) => {
           },
           items: itemsPayload
         },
-        bearer ? { headers: { Authorization: `Bearer ${bearer}` } } : undefined
+        authConfig
       );
 
       const snapToken = initRes.data?.snap?.token;
@@ -508,7 +458,6 @@ const CheckoutPage = ({ onSuccess }) => {
 
   const isFormValid = () => {
     if (cartItems.length === 0) return false;
-    if (type === "makan_di_tempat" && !selectedTable) return false;
     return true;
   };
 
@@ -608,10 +557,7 @@ const CheckoutPage = ({ onSuccess }) => {
               <label style={styles.label}>Tipe Pesanan</label>
               <select
                 value={type}
-                onChange={(e) => {
-                  setType(e.target.value);
-                  setSelectedTable(""); // Reset meja saat ganti tipe
-                }}
+                onChange={(e) => setType(e.target.value)}
                 style={{
                   ...styles.select,
                   ...(focusState.type ? styles.selectFocus : {})
@@ -623,68 +569,6 @@ const CheckoutPage = ({ onSuccess }) => {
                 <option value="makan_di_tempat">🍽️ Makan di Tempat (Dine In)</option>
               </select>
             </div>
-
-            {/* Table Selection */}
-            {type === "makan_di_tempat" && (
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  Pilih Meja 
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'normal', marginLeft: '0.5rem' }}>
-                    (Semua meja tersedia)
-                  </span>
-                </label>
-                
-                {tables.length === 0 ? (
-                  <div style={{ 
-                    color: '#64748b', 
-                    textAlign: 'center', 
-                    padding: '2rem',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '0.75rem'
-                  }}>
-                    <Clock size={24} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                    <div>Memuat data meja...</div>
-                  </div>
-                ) : (
-                  <>
-                    <div style={styles.tableGrid}>
-                      {tables.map(table => {
-                        const isSelected = selectedTable === table.id_meja;
-                        
-                        return (
-                          <button
-                            key={table.id_meja}
-                            type="button"
-                            style={{
-                              ...styles.tableButton,
-                              ...(isSelected ? styles.tableButtonSelected : {})
-                            }}
-                            onClick={() => setSelectedTable(table.id_meja)}
-                          >
-                            <div style={{ fontWeight: '700', fontSize: '1rem' }}>
-                              {table.nomor_meja}
-                            </div>
-                            <div style={styles.tableCapacity}>
-                              <Users size={10} />
-                              {table.kapasitas}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    
-                    {selectedTable && (
-                      <div style={styles.selectedTableInfo}>
-                        <CheckCircle size={16} />
-                        Meja {tables.find(t => t.id_meja === selectedTable)?.nomor_meja} dipilih
-                        (Kapasitas: {tables.find(t => t.id_meja === selectedTable)?.kapasitas} orang)
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
           
 
             {/* Security Notice */}

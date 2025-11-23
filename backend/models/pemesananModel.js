@@ -71,10 +71,10 @@ class Pemesanan {
     static async findById(id_pesanan) {
         // Query 1: Ambil data utama pesanan dan nama pelanggan
         const [orderRows] = await pool.query(`
-            SELECT p.*, pg.nama_lengkap as nama_pelanggan, td.nomor_meja 
+            SELECT p.*, pg.nama_lengkap as nama_pelanggan, c.nama_cabang as cabang
             FROM pesanan p
             JOIN pengguna pg ON p.id_pengguna = pg.id_pengguna
-            LEFT JOIN tempat_duduk td ON p.id_meja = td.id_meja
+            LEFT JOIN cabang c ON p.id_cabang = c.id_cabang
             WHERE p.id_pesanan = ?
         `, [id_pesanan]);
 

@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const pool = require('../config/db');
 const MidtransClient = require('midtrans-client');
-const { Pembayaran } = require('../controllers/Pembayaran');
+const { PembayaranController } = require('../controllers/PembayaranController');
 const { protect } = require('../middleware/authMiddleware');
 
 const snap = new MidtransClient.Snap({
@@ -10,14 +10,14 @@ const snap = new MidtransClient.Snap({
   clientKey: process.env.MIDTRANS_CLIENT_KEY
 });
 
-const ctrl = new Pembayaran({ pool, snap });
+const ctrl = new PembayaranController({ pool, snap });
 
 router.post('/initiate', protect, ctrl.initiate);
 router.post('/reinitiate', protect, ctrl.reinitiate);
 
 const crypto = require('crypto');
-const { Notifikasi } = require('../controllers/Notifikasi');
-const notif = new Notifikasi({ pool, serverKey: process.env.MIDTRANS_SERVER_KEY, crypto });
+const { NotifikasiController } = require('../controllers/NotifikasiController');
+const notif = new NotifikasiController({ pool, serverKey: process.env.MIDTRANS_SERVER_KEY, crypto });
 router.post('/notification', require('express').json(), notif.handle);
 
 module.exports = router;

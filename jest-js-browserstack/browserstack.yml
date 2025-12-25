@@ -1,0 +1,24 @@
+userName: tres_CSzlZm
+accessKey: 45Wd39XLHdrWgf4vGYht
+
+platforms:
+  - os: "Windows"
+    osVersion: "11"
+    browserName: "Chrome"
+    browserVersion: "latest"
+  - os: "Windows"
+    osVersion: "11"
+    browserName: "Edge"
+    browserVersion: "latest"
+  - os: "Windows"
+    osVersion: "11"
+    browserName: "Firefox"
+    browserVersion: "latest"
+  - os: "OS X"
+    osVersion: "Sonoma"
+    browserName: "Safari"
+    browserVersion: "latest"
+
+browserstackLocal: false
+buildName: coffenary-compat-1
+projectName: Coffenary
